@@ -6,6 +6,18 @@ abspath() ( cd "`dirname "$1"`"; d="`pwd -P`"; echo "${d%/}/`basename "$1"`"; )
 fnmatch() { case "$2" in $1) return 0 ;; *) return 1 ;; esac ; }
 in_dir() ( cd "$1"; shift; "$@"; )
 
+print_zsh_setup() {
+echo \
+"${1-workon}"'() {
+    [ $# = 1 ] || set -- "$(workspace workspace-info | cut -d\  -f1 | fzy)"
+    [ -n "$1" ] || return 1
+    set -- "$1" "" "$(workspace dir-of "$1")"
+    [ -d "$3" ] || workspace sync "$1"
+    cd "$3"
+}
+'
+}
+
 escape() {
     case "$1" in
     *[!A-Za-z0-9:_/.+@-]*) echo "$1" | sed "s/'/'\\''/g;s/^/'/;s/$/'/";;
@@ -88,14 +100,7 @@ workspace() {
         ;;
     print-zsh-setup)
         shift
-        echo "${1-workon}"'() {
-            [ $# = 1 ] \
-                || set -- "$(workspace workspace-info | cut -d\  -f1 | fzy)"
-            [ -n "$1" ] || return 1
-            set -- "$1" "" "$(workspace dir-of "$1")"
-            [ -d "$3" ] || workspace sync "$1"
-            cd "$3"
-        }'
+        print_zsh_setup "$@"
         ;;
     workspace-info)
         shift
