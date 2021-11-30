@@ -4,6 +4,7 @@ set -eu
 die() { if [ "$#" -gt 0 ]; then printf "%s\n" "$*" >&2; fi; exit 1; }
 abspath() ( cd "`dirname "$1"`"; d="`pwd -P`"; echo "${d%/}/`basename "$1"`"; )
 fnmatch() { case "$2" in $1) return 0 ;; *) return 1 ;; esac ; }
+in_dir() ( cd "$1"; shift; "$@"; )
 
 escape() {
     case "$1" in
@@ -43,6 +44,10 @@ workspace_info() {
     '
 }
 
+eval_location() {
+    in_dir "$WORKSPACE_REPO_HOME" abspath "$(eval "echo $1")"
+}
+
 workspace() {
     XDG_CONFIG_HOME="${XDG_CONFIG_HOME-$HOME/.config}"
     XDG_DATA_HOME="${XDG_DATA_HOME-$HOME/.local/share}"
@@ -52,7 +57,6 @@ workspace() {
         mkdir -p "$(dirname "$WORKSPACE_CONFIG")"
         printf ".POSIX:\n.SUFFIXES:\n" >"$WORKSPACE_CONFIG"
     fi
-    cd "$WORKSPACE_REPO_HOME"
     case "$1" in
     add)
         shift
@@ -69,15 +73,17 @@ workspace() {
         ;;
     sync)
         shift
-        workspace_info | while read -r TARGET URL LOCATION; do
-            LOCATION="$(abspath "$(eval "echo $LOCATION")")"
-            [ -d "$LOCATION" ] || make -sf "$WORKSPACE_CONFIG" "$TARGET"
+        workspace_info "$@" | while read -r TARGET URL LOCATION; do
+            mkdir -p "$WORKSPACE_REPO_HOME"
+            [ -d "$(eval_location "$LOCATION")" ] \
+                || in_dir "$WORKSPACE_REPO_HOME" \
+                    make -sf "$WORKSPACE_CONFIG" "$TARGET"
         done
         ;;
     foreach)
         shift
         workspace_info | while read -r TARGET URL LOCATION; do
-            sh -c "cd $LOCATION; $1"
+            sh -c "cd $(eval_location "$LOCATION"); $1"
         done
         ;;
     print-zsh-setup)
@@ -87,10 +93,7 @@ workspace() {
                 || set -- "$(workspace workspace-info | cut -d\  -f1 | fzy)"
             [ -n "$1" ] || return 1
             set -- "$1" "" "$(workspace dir-of "$1")"
-            [ -d "$3" ] || (
-                cd "$WORKSPACE_REPO_HOME"
-                make -sf "$WORKSPACE_CONFIG" "$1"
-            )
+            [ -d "$3" ] || workspace sync "$1"
             cd "$3"
         }'
         ;;
@@ -102,7 +105,7 @@ workspace() {
         shift
         workspace_info "$1" | {
             read -r TARGET URL LOCATION
-            abspath "$(eval "echo $LOCATION")"
+            eval_location "$LOCATION"
         }
         ;;
     esac
