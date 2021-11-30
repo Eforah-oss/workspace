@@ -12,6 +12,7 @@ echo \
     [ $# = 1 ] || set -- "$(workspace workspace-info | cut -d\  -f1 | fzy)"
     [ -n "$1" ] || return 1
     set -- "$1" "" "$(workspace dir-of "$1")"
+    [ -n "$3" ] || { echo "ERROR: Unknown workspace: $1" >&2; return 1; }
     [ -d "$3" ] || workspace sync "$1"
     cd "$3"
 }
@@ -75,7 +76,7 @@ workspace() {
         set -- "${2-$(echo "$1" \
             | sed 's_.git/\{0,1\}$__;s_/$__;s_[^/]*:__;s_.*/__')}" "$1" "${2-}"
         if fnmatch '*[!A-Za-z0-9._]*' "$1"; then
-            die "ERROR: Invalid characters in target ($1)"
+            die "ERROR: Invalid characters in target: $1"
         fi
         if grep -q "^$1:" "$WORKSPACE_CONFIG"; then
             die "ERROR: Already added"
