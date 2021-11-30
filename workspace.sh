@@ -6,7 +6,7 @@ abspath() ( cd "`dirname "$1"`"; d="`pwd -P`"; echo "${d%/}/`basename "$1"`"; )
 fnmatch() { case "$2" in $1) return 0 ;; *) return 1 ;; esac ; }
 in_dir() ( cd "$1"; shift; "$@"; )
 
-print_zsh_setup() {
+print_sh_setup() {
 echo \
 "${1-workon}"'() {
     [ $# = 1 ] || set -- "$(workspace workspace-info | cut -d\  -f1 | fzy)"
@@ -16,7 +16,28 @@ echo \
     [ -d "$3" ] || workspace sync "$1"
     cd "$3"
 }
+'
+}
 
+print_bash_setup() {
+print_sh_setup "$@"
+echo '
+_'"${1-workon}"'() {
+    [ "$3" = "'"${1-workon}"'" ] || return
+    local workspaces target
+    COMPREPLY=()
+    <<<"$(workspace workspace-info)" readarray -t workspaces
+    for target in "${workspaces[@]%% *}"; do
+        ! [[ "$target" =~ ^$2 ]] || COMPREPLY+=("$target")
+    done
+}
+complete -F _'"${1-workon}"' '"${1-workon}"'
+'
+}
+
+print_zsh_setup() {
+print_sh_setup "$@"
+echo '
 _'"${1-workon}"'() {
     _arguments "1:workspace name:(${(j: :)${(@fq-)$(\
         workspace workspace-info | cut -d\  -f1)}})"
@@ -105,6 +126,10 @@ workspace() {
         workspace_info | while read -r TARGET URL LOCATION; do
             sh -c "cd $(eval_location "$LOCATION"); $1"
         done
+        ;;
+    print-bash-setup)
+        shift
+        print_bash_setup "$@"
         ;;
     print-zsh-setup)
         shift

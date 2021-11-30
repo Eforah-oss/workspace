@@ -21,7 +21,11 @@ If you put your binaries in `~/.local/bin`:
 
 If you can't figure this out and want to use this tool anyway, message me.
 
-Afterwards, add something like this to your `.zshrc`:
+Afterwards, add something like this to your `.bashrc`:
+
+    eval "$(workspace print-bash-setup workon)"
+
+Or, if you use Zsh, your `.zshrc`:
 
     eval "$(workspace print-zsh-setup workon)"
 
