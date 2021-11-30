@@ -16,6 +16,13 @@ echo \
     [ -d "$3" ] || workspace sync "$1"
     cd "$3"
 }
+
+_'"${1-workon}"'() {
+    _arguments "1:workspace name:(${(j: :)${(@fq-)$(\
+        workspace workspace-info | cut -d\  -f1)}})"
+}
+
+compdef _'"${1-workon}"' '"${1-workon}"'
 '
 }
 
