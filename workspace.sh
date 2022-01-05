@@ -98,6 +98,7 @@ workspace() {
         mkdir -p "$(dirname "$WORKSPACE_CONFIG")"
         printf ".POSIX:\n.SUFFIXES:\n" >"$WORKSPACE_CONFIG"
     fi
+    mkdir -p "$WORKSPACE_REPO_HOME"
     case "$1" in
     add)
         shift
@@ -115,7 +116,6 @@ workspace() {
     sync)
         shift
         workspace_info "$@" | while read -r TARGET URL LOCATION; do
-            mkdir -p "$WORKSPACE_REPO_HOME"
             [ -d "$(eval_location "$LOCATION")" ] \
                 || in_dir "$WORKSPACE_REPO_HOME" \
                     make -sf "$WORKSPACE_CONFIG" "$TARGET"
