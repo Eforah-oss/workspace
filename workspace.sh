@@ -67,7 +67,7 @@ workspace_info() {
                 location = clonestring ""
                 sub(/.git\/?$/, "", location)
                 sub(/\/$/, "", location)
-                sub(/[^/]*:/, "", location)
+                sub(/[^\/]*:/, "", location)
                 sub(/.*\//, "", location)
             }
             printf("%s %s %s\n", target, url, location)
