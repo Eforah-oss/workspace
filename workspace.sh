@@ -2,7 +2,6 @@
 set -eu
 
 die() { if [ "$#" -gt 0 ]; then printf "%s\n" "$*" >&2; fi; exit 1; }
-abspath() ( cd "`dirname "$1"`"; d="`pwd -P`"; echo "${d%/}/`basename "$1"`"; )
 fnmatch() { case "$2" in $1) return 0 ;; *) return 1 ;; esac ; }
 in_dir() ( cd "$1"; shift; "$@"; )
 
@@ -86,7 +85,8 @@ workspace_info() {
 }
 
 eval_location() {
-    in_dir "$WORKSPACE_REPO_HOME" abspath "$(eval "echo $1")"
+    set -- "$(eval "echo $1")"
+    expr "$1" : / >/dev/null && echo "$1" || echo "${WORKSPACE_REPO_HOME%/}/$1"
 }
 
 workspace() {
@@ -116,9 +116,11 @@ workspace() {
     sync)
         shift
         workspace_info "$@" | while read -r TARGET URL LOCATION; do
-            [ -d "$(eval_location "$LOCATION")" ] \
-                || in_dir "$WORKSPACE_REPO_HOME" \
+            if ! [ -d "$(eval_location "$LOCATION")" ]; then
+                mkdir -p "$(dirname "$(eval_location "$LOCATION")")"
+                in_dir "$WORKSPACE_REPO_HOME" \
                     make -sf "$WORKSPACE_CONFIG" "$TARGET"
+            fi
         done
         ;;
     foreach)
