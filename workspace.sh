@@ -69,7 +69,7 @@ workspace_info() {
                 sub(/[^\/]*:/, "", location)
                 sub(/.*\//, "", location)
             }
-            printf("%s %s %s\n", target, url, location)
+            printf("%s %s\n", target, location)
         }
         /^[A-Za-z0-9._]*:/ {
             target = substr($0, 0, index($0, ":") - 1)
@@ -115,7 +115,7 @@ workspace() {
         ;;
     sync)
         shift
-        workspace_info "$@" | while read -r TARGET URL LOCATION; do
+        workspace_info "$@" | while read -r TARGET LOCATION; do
             if ! [ -d "$(eval_location "$LOCATION")" ]; then
                 mkdir -p "$(dirname "$(eval_location "$LOCATION")")"
                 in_dir "$WORKSPACE_REPO_HOME" \
@@ -125,7 +125,7 @@ workspace() {
         ;;
     foreach)
         shift
-        workspace_info | while read -r TARGET URL LOCATION; do
+        workspace_info | while read -r TARGET LOCATION; do
             sh -c "cd $(eval_location "$LOCATION"); $1"
         done
         ;;
@@ -144,7 +144,7 @@ workspace() {
     dir-of)
         shift
         workspace_info "$1" | {
-            read -r TARGET URL LOCATION
+            read -r TARGET LOCATION
             eval_location "$LOCATION"
         }
         ;;
