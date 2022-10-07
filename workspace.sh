@@ -54,7 +54,7 @@ escape() {
 }
 
 workspace_info() {
-    <"$XDG_CONFIG_HOME/workspace/config.mk" TARGET="${1-}" awk '
+    <"$WORKSPACE_CONFIG" TARGET="${1-}" awk '
         function output(target, clonestring) {
             if (ENVIRON["TARGET"] && ENVIRON["TARGET"] != target) return;
             location_index = index(clonestring, " ")
