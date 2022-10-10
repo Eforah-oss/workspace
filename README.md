@@ -39,7 +39,7 @@ First, add a repository.
     workspace add https://github.com/milhnl/pass.git pass_clone
 
 This adds the repository to the workspace configuration file, which can
-be found at `$XDG_CONFIG_HOME/workspace/config.mk`. `pass_clone` is the
+be found at `$XDG_CONFIG_HOME/workspace/config`. `pass_clone` is the
 name of your workspace, and will default to the name of repository if
 you omit this.
 
@@ -63,35 +63,75 @@ customize the path on a per-repository basis as seen below.
 The configuration file can be found at:
 
   - `$WORKSPACE_CONFIG` which defaults to
-  - `$XDG_CONFIG_HOME/workspace/config.mk` which defaults to
-  - `~/.config/workspace/config.mk`
+  - `$XDG_CONFIG_HOME/workspace/config` which defaults to
+  - `~/.config/workspace/config`
 
-The `.mk` extension does indeed mean that this is a Makefile. This is
-not the most natural configuration format, so there are a few gotchas
-when editing this file by hand. It does have the advantage of making
-your configuration extremely customizable. This might get a bit technical
-and is not necessary for normal usage.
+`workspace` uses a custom line-based configuration file format, which
+has lines starting with two pound signs (`#`) labeling your workspaces,
+which then contain a script to initialise them. Running the command
+`workspace add https://github.com/myusername/project` would add this to
+your configuration file:
 
-#### Workspace definition in config.mk
-`workspace` sees all `make` targets that run `git clone` as a
-workspace. The heuristic for detecting this is currently a bit limited,
-but does support some variations and their combinations:
+    ## project
+    git clone https://github.com/myusername/project
 
-    workspace:; git clone https://milhnl@github.com/milhnl/workspace.git
-    
-    better_pass:
-    	git clone git@github.com:milhnl/pass better_pass
-    
-    website:
-    	git clone https://git.example.com/website /srv/http/default
-    	echo 'You can put initialization commands here'
-    
-    passwords:
-    	git clone git@mysite.com:passwords ${PASSWORD_STORE_DIR}
+Straightforward right? After every heading with two pounds, you can
+have a script that'll clone your repository. This script is run in
+`$WORKSPACE_REPO_HOME`, so by default, the directory git clones your
+repo in (by default the last part of the URL, minus `.git`) is the same
+as the name of your workspace.
 
-As you can probably infer from these examples, the `make` target name is
-the workspace name, the string `git clone` is detected by `workspace`,
-and the target path is either taken from the last part of the URL (as git
-does) or specified after (also like git). This last bit is the tricky
-part, if you want to use environment variables, use the syntax that is
-supported by both `make` and `sh`: `${VAR}`.
+#### Other destination folders
+
+If you want the destination folder to be different than the default,
+you'll need to specify it twice, once for `workspace`, and a second time
+in the `git clone` invocation:
+
+    ## dotfiles $HOME/.config
+    git clone https://github.com/myusername/dotfiles "$HOME/.config"
+
+As you can see, `workspace` only really reads the lines with pounds to
+know which workspaces you have and where they are. The rest is just
+scripting lines that'll be run in your current shell.
+
+#### Initialization scripts
+
+First: let's have an example:
+
+    ## saas_monorepo
+    git clone https://smith@git.mycompany.com/saas_monorepo
+    npm --prefix react-app install
+    #### powershell
+    choco install -y php
+    #### sh
+    apt install php
+    ####
+    git config user.email smith@mycompany.com
+
+Now we see more commands, and also 4-pound directives with the name of
+a shell. These tell `workspace` that the following commands may only be
+run in the specified shell. To reset this, use a line with only `####`,
+also like above.
+
+You can use if you use for example both powershell and the WSL on
+Windows, or sometimes switch between `fish` and `bash`. For the
+use case above (installing system dependencies) it is recommended to use
+[pmmmux](https://github.com/Eforah-oss/pmmux).
+
+This segment is run when the repository is first cloned. If you want
+some commands to run when you open a workspace, see the next paragraphs.
+
+#### Integration with `workon`
+Suppose you use `node`. Versions are a pain, and you don't just use
+`node`, but also `nvm`. You want to run `nvm use` after opening your
+workspace. This is possible by adding a `cd` script like this:
+
+    ## node_project
+    git clone https://example.com/node_project.git
+    ### cd
+    nvm use
+
+This script is run in your shell via the shell integration every time
+you run `workon` (or whatever you named it, see "Installation"). You can
+also use this section to set environment variables or start your database.
+The shell directives explained above work here as well.

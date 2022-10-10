@@ -14,6 +14,7 @@ echo \
     [ -n "$3" ] || { echo "ERROR: Unknown workspace: $1" >&2; return 1; }
     [ -d "$3" ] || workspace sync "$1"
     cd "$3"
+    eval "$(workspace script-of "$1" cd)"
 }
 '
 }
@@ -55,48 +56,76 @@ escape() {
 
 workspace_info() {
     <"$WORKSPACE_CONFIG" TARGET="${1-}" awk '
-        function output(target, clonestring) {
-            if (ENVIRON["TARGET"] && ENVIRON["TARGET"] != target) return;
-            location_index = index(clonestring, " ")
-            if (location_index) {
-                url = substr(clonestring, 0, location_index - 1)
-                location = substr(clonestring, location_index + 1)
-            } else {
-                url = clonestring
-                location = clonestring ""
-                sub(/.git\/?$/, "", location)
-                sub(/\/$/, "", location)
-                sub(/[^\/]*:/, "", location)
-                sub(/.*\//, "", location)
+        /^##([^#].*|)$/ {
+            sub(/^## ?/, "");
+            name = $0
+            path = name
+            if (match(name, /^[^ ]* /)) {
+                name = substr($0, 1, RLENGTH - 1)
+                path = substr($0, RLENGTH + 1)
+                while (match(path, /\$({[A-Za-z0-9_]*}|[A-Za-z0-9_]*)/)) {
+                    var = substr(path, RSTART + 1, RLENGTH - 1);
+                    if (substr(var, 1, 1) == "{")
+                        var = substr(var, 2, length(var) - 2)
+                    path = substr(path, 1, RSTART - 1) ENVIRON[var] \
+                        substr(path, RSTART + RLENGTH)
+                }
             }
-            printf("%s %s\n", target, location)
-        }
-        /^[A-Za-z0-9._]*:/ {
-            target = substr($0, 0, index($0, ":") - 1)
-            clone_index = index($0, "; git clone ")
-            if (clone_index) {
-                output(target, substr($0, clone_index + 12))
-            }
-        }
-        /^\tgit clone / {
-            output(target, substr($0, index($0, "git clone ") + 10))
+            if (ENVIRON["TARGET"] && ENVIRON["TARGET"] != name) next;
+            if (substr(path, 1, 1) != "/")
+                path = ENVIRON["WORKSPACE_REPO_HOME"] "/" path
+            printf("%s %s\n", name, path);
         }
     '
 }
 
-eval_location() {
-    set -- "$(eval "echo $1")"
-    expr "$1" : / >/dev/null && echo "$1" || echo "${WORKSPACE_REPO_HOME%/}/$1"
+get_script() {
+    TARGET="$1" ACTION="$2" awk '
+        /^##([^#].*|)$/ {
+            name = $0
+            sub(/^## ?/, "", name);
+            if (match(name, /^([^\\]|\\.|[^ ])* /)) {
+                name = substr($0, 1, RLENGTH - 1)
+            }
+            action = "clone"
+            shell = ENVIRON["SHELL"]
+        }
+        /^###([^#].*|)$/ {
+            action = $0
+            sub(/^### ?/, "", action);
+        }
+        /^####([^#].*|)$/ {
+            line = $0
+            sub(/^#### ?/, "", line);
+            if (line == "") {
+                shell = ENVIRON["SHELL"]
+            } else if (!match(line, /^[A-Za-z0-9_.]*$/)) {
+                print "WARNING: " FILENAME ":" FNR ": Invalid shell: " line \
+                    >"/dev/stderr"
+                shell = "/" #Can not match a shell
+            } else {
+                shell = line
+            }
+        }
+        /^[^#][^#]/ {
+            if (ENVIRON["TARGET"] != name) next;
+            if (ENVIRON["ACTION"] != action) next;
+            if (!match(ENVIRON["SHELL"], shell "$")) next;
+            print $0
+        }
+    ' "$WORKSPACE_CONFIG"
 }
 
 workspace() {
+    set -a
     XDG_CONFIG_HOME="${XDG_CONFIG_HOME-$HOME/.config}"
     XDG_DATA_HOME="${XDG_DATA_HOME-$HOME/.local/share}"
-    WORKSPACE_CONFIG="${WORKSPACE_CONFIG-$XDG_CONFIG_HOME/workspace/config.mk}"
+    WORKSPACE_CONFIG="${WORKSPACE_CONFIG-$XDG_CONFIG_HOME/workspace/config}"
     WORKSPACE_REPO_HOME="${WORKSPACE_REPO_HOME:-$XDG_DATA_HOME/workspace}"
+    set +a
     if ! [ -e "$WORKSPACE_CONFIG" ]; then
         mkdir -p "$(dirname "$WORKSPACE_CONFIG")"
-        printf ".POSIX:\n.SUFFIXES:\n" >"$WORKSPACE_CONFIG"
+        touch "$WORKSPACE_CONFIG"
     fi
     mkdir -p "$WORKSPACE_REPO_HOME"
     case "$1" in
@@ -107,26 +136,26 @@ workspace() {
         if fnmatch '*[!A-Za-z0-9._]*' "$1"; then
             die "ERROR: Invalid characters in target: $1"
         fi
-        if grep -q "^$1:" "$WORKSPACE_CONFIG"; then
+        if grep -qE "^## ?$1(| .*)\$" "$WORKSPACE_CONFIG"; then
             die "ERROR: Already added"
         fi
-        printf "\n%s:; git clone %s%s\n" "$1" "$(escape "$2")" "${3:+ $3}" \
+        printf "## %s\ngit clone %s%s\n" "$1" "$(escape "$2")" "${3:+ $3}" \
             >>"$WORKSPACE_CONFIG"
         ;;
     sync)
         shift
         workspace_info "$@" | while read -r TARGET LOCATION; do
-            if ! [ -d "$(eval_location "$LOCATION")" ]; then
-                mkdir -p "$(dirname "$(eval_location "$LOCATION")")"
-                in_dir "$WORKSPACE_REPO_HOME" \
-                    make -sf "$WORKSPACE_CONFIG" "$TARGET"
+            if ! [ -d "$LOCATION" ]; then
+                mkdir -p "$(dirname "$LOCATION")"
+                get_script "$TARGET" clone \
+                    | in_dir "$WORKSPACE_REPO_HOME" sh /dev/stdin
             fi
         done
         ;;
     foreach)
         shift
         workspace_info | while read -r TARGET LOCATION; do
-            sh -c "cd $(eval_location "$LOCATION"); $1"
+            in_dir "$LOCATION" sh -c "$1"
         done
         ;;
     print-bash-setup)
@@ -145,8 +174,12 @@ workspace() {
         shift
         workspace_info "$1" | {
             read -r TARGET LOCATION
-            eval_location "$LOCATION"
+            echo "$LOCATION"
         }
+        ;;
+    script-of)
+        shift
+        get_script "$@"
         ;;
     esac
 }
