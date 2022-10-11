@@ -55,7 +55,8 @@ escape() {
 }
 
 workspace_info() {
-    <"$WORKSPACE_CONFIG" TARGET="${1-}" awk '
+    [ -e "$WORKSPACE_CONFIG" ] || die "ERROR: No config, add a workspace first"
+    TARGET="${1-}" awk '
         /^##([^#].*|)$/ {
             sub(/^## ?/, "");
             name = $0
@@ -76,10 +77,11 @@ workspace_info() {
                 path = ENVIRON["WORKSPACE_REPO_HOME"] "/" path
             printf("%s %s\n", name, path);
         }
-    '
+    ' "$WORKSPACE_CONFIG"
 }
 
 get_script() {
+    [ -e "$WORKSPACE_CONFIG" ] || die "ERROR: No config, add a workspace first"
     TARGET="$1" ACTION="$2" awk '
         /^##([^#].*|)$/ {
             name = $0
@@ -123,10 +125,6 @@ workspace() {
     WORKSPACE_CONFIG="${WORKSPACE_CONFIG-$XDG_CONFIG_HOME/workspace/config}"
     WORKSPACE_REPO_HOME="${WORKSPACE_REPO_HOME:-$XDG_DATA_HOME/workspace}"
     set +a
-    if ! [ -e "$WORKSPACE_CONFIG" ]; then
-        mkdir -p "$(dirname "$WORKSPACE_CONFIG")"
-        touch "$WORKSPACE_CONFIG"
-    fi
     mkdir -p "$WORKSPACE_REPO_HOME"
     case "$1" in
     add)
@@ -136,9 +134,10 @@ workspace() {
         if fnmatch '*[!A-Za-z0-9._]*' "$1"; then
             die "ERROR: Invalid characters in target: $1"
         fi
-        if grep -qE "^## ?$1(| .*)\$" "$WORKSPACE_CONFIG"; then
+        if grep -qE "^## ?$1(| .*)\$" "$WORKSPACE_CONFIG" 2>/dev/null; then
             die "ERROR: Already added"
         fi
+        mkdir -p "$(dirname "$WORKSPACE_CONFIG")"
         printf "## %s\ngit clone %s%s\n" "$1" "$(escape "$2")" "${3:+ $3}" \
             >>"$WORKSPACE_CONFIG"
         ;;
