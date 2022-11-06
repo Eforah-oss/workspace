@@ -24,11 +24,11 @@ print_sh_setup "$@"
 echo '
 _'"${1-workon}"'() {
     [ "$3" = "'"${1-workon}"'" ] || return
-    local workspaces target
+    local workspaces workspace
     COMPREPLY=()
     <<<"$(workspace workspace-info)" readarray -t workspaces
-    for target in "${workspaces[@]%% *}"; do
-        ! [[ "$target" =~ ^$2 ]] || COMPREPLY+=("$target")
+    for workspace in "${workspaces[@]%% *}"; do
+        ! [[ "$workspace" =~ ^$2 ]] || COMPREPLY+=("$workspace")
     done
 }
 complete -F _'"${1-workon}"' '"${1-workon}"'
@@ -56,7 +56,7 @@ escape() {
 
 workspace_info() {
     [ -e "$WORKSPACE_CONFIG" ] || die "ERROR: No config, add a workspace first"
-    TARGET="${1-}" awk '
+    WORKSPACE="${1-}" awk '
         /^##([^#].*|)$/ {
             sub(/^## ?/, "");
             name = $0
@@ -72,7 +72,7 @@ workspace_info() {
                         substr(path, RSTART + RLENGTH)
                 }
             }
-            if (ENVIRON["TARGET"] && ENVIRON["TARGET"] != name) next;
+            if (ENVIRON["WORKSPACE"] && ENVIRON["WORKSPACE"] != name) next;
             if (substr(path, 1, 1) != "/")
                 path = ENVIRON["WORKSPACE_REPO_HOME"] "/" path
             printf("%s %s\n", name, path);
@@ -82,7 +82,7 @@ workspace_info() {
 
 get_script() {
     [ -e "$WORKSPACE_CONFIG" ] || die "ERROR: No config, add a workspace first"
-    TARGET="$1" ACTION="$2" awk '
+    WORKSPACE="$1" ACTION="$2" awk '
         /^##([^#].*|)$/ {
             name = $0
             sub(/^## ?/, "", name);
@@ -110,7 +110,7 @@ get_script() {
             }
         }
         /^[^#][^#]/ {
-            if (ENVIRON["TARGET"] != name) next;
+            if (ENVIRON["WORKSPACE"] != name) next;
             if (ENVIRON["ACTION"] != action) next;
             if (!match(ENVIRON["SHELL"], shell "$")) next;
             print $0
@@ -132,7 +132,7 @@ workspace() {
         set -- "${2-$(echo "$1" \
             | sed 's_.git/\{0,1\}$__;s_/$__;s_[^/]*:__;s_.*/__')}" "$1" "${2-}"
         if fnmatch '*[!A-Za-z0-9._]*' "$1"; then
-            die "ERROR: Invalid characters in target: $1"
+            die "ERROR: Invalid characters in workspace name: $1"
         fi
         if grep -qE "^## ?$1(| .*)\$" "$WORKSPACE_CONFIG" 2>/dev/null; then
             die "ERROR: Already added"
@@ -143,18 +143,18 @@ workspace() {
         ;;
     sync)
         shift
-        workspace_info "$@" | while read -r TARGET LOCATION; do
-            if ! [ -d "$LOCATION" ]; then
-                mkdir -p "$(dirname "$LOCATION")"
-                get_script "$TARGET" clone \
+        workspace_info "$@" | while read -r WORKSPACE WORKSPACE_PATH; do
+            if ! [ -d "$WORKSPACE_PATH" ]; then
+                mkdir -p "$(dirname "$WORKSPACE_PATH")"
+                get_script "$WORKSPACE" clone \
                     | in_dir "$WORKSPACE_REPO_HOME" sh /dev/stdin
             fi
         done
         ;;
     foreach)
         shift
-        workspace_info | while read -r TARGET LOCATION; do
-            in_dir "$LOCATION" sh -c "$1"
+        workspace_info | while read -r WORKSPACE WORKSPACE_PATH; do
+            in_dir "$WORKSPACE_PATH" sh -c "$1"
         done
         ;;
     print-bash-setup)
@@ -172,8 +172,8 @@ workspace() {
     dir-of)
         shift
         workspace_info "$1" | {
-            read -r TARGET LOCATION
-            echo "$LOCATION"
+            read -r WORKSPACE WORKSPACE_PATH
+            echo "$WORKSPACE_PATH"
         }
         ;;
     script-of)
