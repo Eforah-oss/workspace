@@ -15,6 +15,9 @@ written in simple (YMMV) POSIX shell script, so should run unmodified
 on your MacBook, WSL or router, if that floats your goat.
 
 ### Installation
+
+#### Linux/WSL/macOS/... (Unix)
+
 If you put your binaries in `~/.local/bin`:
 
     PREFIX="$HOME/.local" make install
@@ -31,6 +34,19 @@ Or, if you use Zsh, your `.zshrc`:
 
 The word `workon` is the default value and can be omitted, but is the
 name for the shell function that you can use to switch to a workspace.
+
+#### Windows/PowerShell
+
+Run `./Install.ps1`, which will put the Workspace module where PowerShell
+expects it. PowerShell support is very new and does not work like the
+Unix version yet.
+
+To set an alias for `Enter-Workspace` (which works like `workon` below),
+add something like
+
+    Set-Alias workon Enter-Workspace
+
+to your PowerShell profile.
 
 ### Usage
 
