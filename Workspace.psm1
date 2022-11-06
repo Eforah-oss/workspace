@@ -12,15 +12,6 @@ function Get-WorkspaceConfig {
   Get-Content $config
 }
 
-function Get-WorkspaceHome {
-  if ($env:WORKSPACE_REPO_HOME) {
-    $env:WORKSPACE_REPO_HOME
-  }
-  else {
-    "$([Environment]::GetFolderPath('LocalApplicationData'))/workspace"
-  }
-}
-
 function Get-Workspaces {
   Get-WorkspaceConfig `
   | Select-String '^## ?([^#][^ ]*)' `
@@ -29,6 +20,10 @@ function Get-Workspaces {
 
 function Get-WorkspacePath {
   param($Workspace)
+  if ($null -eq $env:WORKSPACE_REPO_HOME) {
+    $env:WORKSPACE_REPO_HOME = `
+      "$([Environment]::GetFolderPath('LocalApplicationData'))/workspace"
+  }
   Get-WorkspaceConfig `
   | Select-String "^## ?($Workspace)( ?(.*))" `
   | ForEach-Object { if ($_.Matches.Groups[3].Value) {
@@ -54,7 +49,7 @@ function Get-WorkspacePath {
     } } `
   | ForEach-Object {
     if ($_ -notlike "/*") {
-      "$(Get-WorkspaceHome)/$_"
+      "${env:WORKSPACE_REPO_HOME}/$_"
     }
     else { $_ }
   }
