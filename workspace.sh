@@ -12,7 +12,7 @@ echo \
     [ -n "$1" ] || return 1
     set -- "$1" "" "$(workspace dir-of "$1")"
     [ -n "$3" ] || { echo "ERROR: Unknown workspace: $1" >&2; return 1; }
-    [ -d "$3" ] || workspace sync "$1"
+    [ -d "$3" ] || workspace sync "$1" || return $?
     cd "$3"
     eval "$(workspace script-of "$1" cd)"
 }
@@ -130,7 +130,7 @@ workspace() {
     add)
         shift
         set -- "${2-$(echo "$1" \
-            | sed 's_.git/\{0,1\}$__;s_/$__;s_[^/]*:__;s_.*/__')}" "$1" "${2-}"
+            | sed 's_.git/\{0,1\}$__;s_/$__;s_[^/]*:__;s_.*/__')}" "$1"
         if fnmatch '*[!A-Za-z0-9._]*' "$1"; then
             die "ERROR: Invalid characters in workspace name: $1"
         fi
@@ -138,16 +138,21 @@ workspace() {
             die "ERROR: Already added"
         fi
         mkdir -p "$(dirname "$WORKSPACE_CONFIG")"
-        printf "## %s\ngit clone %s%s\n" "$1" "$(escape "$2")" "${3:+ $3}" \
+        printf "## %s\ngit clone %s .\n" "$1" "$(escape "$2")" \
             >>"$WORKSPACE_CONFIG"
         ;;
     sync)
         shift
         workspace_info "$@" | while read -r WORKSPACE WORKSPACE_PATH; do
             if ! [ -d "$WORKSPACE_PATH" ]; then
-                mkdir -p "$(dirname "$WORKSPACE_PATH")"
+                mkdir -p "$WORKSPACE_PATH"
                 get_script "$WORKSPACE" clone \
-                    | in_dir "$WORKSPACE_REPO_HOME" sh /dev/stdin
+                        | in_dir "$WORKSPACE_PATH" sh -e /dev/stdin || {
+                    WORKSPACE_ERROR=$?
+                    rm -rf "$WORKSPACE_PATH"
+                    printf "%s\n" "ERROR: could not inititalize $WORKSPACE"
+                    exit $WORKSPACE_ERROR
+                }
             fi
         done
         ;;

@@ -101,7 +101,7 @@ function Enter-Workspace {
 
   if (!$(Test-Path "$(Get-WorkspacePath $Workspace)")) {
     New-Item -Type Directory "$(Get-WorkspacePath $Workspace)" 1>$null
-    Set-Location (Split-Path (Get-WorkspacePath $Workspace))
+    Set-Location (Get-WorkspacePath $Workspace)
     Invoke-Expression (Get-WorkspaceScript $Workspace clone)
   }
   else {

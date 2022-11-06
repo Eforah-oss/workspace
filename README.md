@@ -89,22 +89,23 @@ which then contain a script to initialise them. Running the command
 your configuration file:
 
     ## project
-    git clone https://github.com/myusername/project
+    git clone https://github.com/myusername/project .
 
 Straightforward right? After every heading with two pounds, you can
-have a script that'll clone your repository. This script is run in
-`$WORKSPACE_REPO_HOME`, so by default, the directory git clones your
-repo in (by default the last part of the URL, minus `.git`) is the same
-as the name of your workspace.
+have a script that'll clone your repository. This script is run in the
+target directory, so don't forget to include the final `.` when running
+`git`.
 
 #### Other destination folders
 
-If you want the destination folder to be different than the default,
-you'll need to specify it twice, once for `workspace`, and a second time
-in the `git clone` invocation:
+If you want the destination folder to be different than the default
+(which is the same as the workspace name), you'll need to specify it
+after the name of the workspace. Environment variables are interpreted
+using simple `$VARIABLE` or `${VARIABLE}` syntax.
 
     ## dotfiles $HOME/.config
-    git clone https://github.com/myusername/dotfiles "$HOME/.config"
+    rm -r *
+    git clone https://github.com/myusername/dotfiles .
 
 As you can see, `workspace` only really reads the lines with pounds to
 know which workspaces you have and where they are. The rest is just
@@ -115,7 +116,7 @@ scripting lines that'll be run in your current shell.
 First: let's have an example:
 
     ## saas_monorepo
-    git clone https://smith@git.mycompany.com/saas_monorepo
+    git clone https://smith@git.mycompany.com/saas_monorepo .
     npm --prefix react-app install
     #### powershell
     choco install -y php
@@ -143,7 +144,7 @@ Suppose you use `node`. Versions are a pain, and you don't just use
 workspace. This is possible by adding a `cd` script like this:
 
     ## node_project
-    git clone https://example.com/node_project.git
+    git clone https://example.com/node_project.git .
     ### cd
     nvm use
 
