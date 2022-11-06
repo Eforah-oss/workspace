@@ -48,8 +48,8 @@ function Get-WorkspacePath {
       $_.Matches.Groups[1].Value
     } } `
   | ForEach-Object {
-    if ($_ -notlike "/*") {
-      "${env:WORKSPACE_REPO_HOME}/$_"
+    if (!(Split-Path $_ -IsAbsolute)) {
+      Join-Path $env:WORKSPACE_REPO_HOME $_
     }
     else { $_ }
   }
@@ -99,13 +99,14 @@ function Enter-Workspace {
     $Workspace = (Get-Workspaces | Invoke-Fzf)
   }
 
-  if (!$(Test-Path "$(Get-WorkspacePath $Workspace)")) {
-    New-Item -Type Directory "$(Get-WorkspacePath $Workspace)" 1>$null
-    Set-Location (Get-WorkspacePath $Workspace)
+  $WorkspacePath = (Get-WorkspacePath $Workspace)
+  if (!$(Test-Path $WorkspacePath)) {
+    New-Item -Type Directory $WorkspacePath 1>$null
+    Set-Location $WorkspacePath
     Invoke-Expression (Get-WorkspaceScript $Workspace clone)
   }
   else {
-    Set-Location (Get-WorkspacePath $Workspace)
+    Set-Location $WorkspacePath
   }
 
   if (Get-WorkspaceScript $Workspace) {
