@@ -25,7 +25,7 @@ function Get-WorkspacePath {
       "$([Environment]::GetFolderPath('LocalApplicationData'))/workspace"
   }
   Get-WorkspaceConfig `
-  | Select-String "^## ?($Workspace)( ?(.*))" `
+  | Select-String "^## ?($Workspace)( (.*))?$" `
   | ForEach-Object { if ($_.Matches.Groups[3].Value) {
       (($_.Matches.Groups[3].Value | Select-String -AllMatches `
           "([^$]*)(\`$(\{([^}]+)\}|[A-Za-z0-9_]+))?").Matches `
@@ -62,7 +62,7 @@ function Get-WorkspaceScript {
   $currentShell = $null;
   (Get-WorkspaceConfig | ForEach-Object {
     switch -Regex ($_) {
-      "^## ?([^#][^ ]*)( ?(.*))$" {
+      "^## ?([^#][^ ]*)( (.*))?$" {
         $currentWorkspace = $Matches.1
         $currentAction = "clone"
         $currentShell = "powershell"
