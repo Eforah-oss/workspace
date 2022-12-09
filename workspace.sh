@@ -145,14 +145,17 @@ workspace() {
         shift
         workspace_info "$@" | while read -r WORKSPACE WORKSPACE_PATH; do
             if ! [ -d "$WORKSPACE_PATH" ]; then
-                mkdir -p "$WORKSPACE_PATH"
-                get_script "$WORKSPACE" clone \
-                        | in_dir "$WORKSPACE_PATH" sh -e /dev/stdin || {
+                clean() {
                     WORKSPACE_ERROR=$?
                     rm -rf "$WORKSPACE_PATH"
-                    printf "%s\n" "ERROR: could not inititalize $WORKSPACE"
+                    echo "ERROR: Could not initialize $WORKSPACE" >&2
+                    trap - EXIT INT TERM
                     exit $WORKSPACE_ERROR
                 }
+                trap clean EXIT INT TERM
+                mkdir -p "$WORKSPACE_PATH"
+                get_script "$WORKSPACE" clone \
+                    | in_dir "$WORKSPACE_PATH" sh -e /dev/stdin || clean
             fi
         done
         ;;
