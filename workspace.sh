@@ -167,10 +167,12 @@ workspace() {
             fi
         done
         ;;
-    foreach)
+    "in")
         shift
-        workspace_info | while read -r WORKSPACE WORKSPACE_PATH; do
-            in_dir "$WORKSPACE_PATH" sh -c "$1"
+        WORKSPACE="$1"; shift
+        workspace_info "$WORKSPACE" | while read -r WORKSPACE WORKSPACE_PATH;do
+            export WORKSPACE WORKSPACE_PATH
+            in_dir "$WORKSPACE_PATH" "$@"
         done
         ;;
     print-bash-setup)
