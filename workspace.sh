@@ -61,6 +61,7 @@ workspace_info() {
             sub(/^## ?/, "");
             name = $0
             path = name
+            if (length(name) == 0) next;
             if (match(name, /^[^ ]* /)) {
                 name = substr($0, 1, RLENGTH - 1)
                 path = substr($0, RLENGTH + 1)
@@ -83,11 +84,18 @@ workspace_info() {
 get_script() {
     [ -e "$WORKSPACE_CONFIG" ] || die "ERROR: No config, add a workspace first"
     WORKSPACE="$1" ACTION="$2" awk '
+        BEGIN {
+            name = ENVIRON["WORKSPACE"]
+            action = ENVIRON["ACTION"]
+            shell = ENVIRON["SHELL"]
+        }
         /^##([^#].*|)$/ {
             name = $0
             sub(/^## ?/, "", name);
             if (match(name, /^([^\\]|\\.|[^ ])* /)) {
                 name = substr(name, 1, RLENGTH - 1)
+            } else if (length(name) == 0) {
+                name = ENVIRON["WORKSPACE"]
             }
             action = "clone"
             shell = ENVIRON["SHELL"]

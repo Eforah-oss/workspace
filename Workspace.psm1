@@ -57,13 +57,14 @@ function Get-WorkspacePath {
 
 function Get-WorkspaceScript {
   param($Workspace, $Action)
-  $currentWorkspace = $null;
-  $currentAction = $null;
-  $currentShell = $null;
+  $currentWorkspace = $Workspace;
+  $currentAction = $Action;
+  $currentShell = "powershell";
   (Get-WorkspaceConfig | ForEach-Object {
     switch -Regex ($_) {
       "^## ?([^#][^ ]*)( (.*))?$" {
-        $currentWorkspace = $Matches.1
+        if ($Matches[1].Length -gt 0) { $currentWorkspace = $Matches.1 }
+        else { $currentWorkspace = $Workspace }
         $currentAction = "clone"
         $currentShell = "powershell"
       }
