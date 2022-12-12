@@ -87,7 +87,7 @@ get_script() {
             name = $0
             sub(/^## ?/, "", name);
             if (match(name, /^([^\\]|\\.|[^ ])* /)) {
-                name = substr($0, 1, RLENGTH - 1)
+                name = substr(name, 1, RLENGTH - 1)
             }
             action = "clone"
             shell = ENVIRON["SHELL"]
