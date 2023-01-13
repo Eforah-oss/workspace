@@ -164,6 +164,7 @@ workspace() {
                 mkdir -p "$WORKSPACE_PATH"
                 get_script "$WORKSPACE" clone \
                     | in_dir "$WORKSPACE_PATH" sh -e /dev/stdin || clean
+                trap - EXIT INT TERM
             fi
         done
         ;;
