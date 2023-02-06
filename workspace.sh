@@ -65,7 +65,7 @@ workspace_info() {
             if (match(name, /^[^ ]* /)) {
                 name = substr($0, 1, RLENGTH - 1)
                 path = substr($0, RLENGTH + 1)
-                while (match(path, /\$({[A-Za-z0-9_]*}|[A-Za-z0-9_]*)/)) {
+                while (match(path, /\$(\{[A-Za-z0-9_]*\}|[A-Za-z0-9_]*)/)) {
                     var = substr(path, RSTART + 1, RLENGTH - 1);
                     if (substr(var, 1, 1) == "{")
                         var = substr(var, 2, length(var) - 2)
