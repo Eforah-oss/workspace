@@ -81,6 +81,22 @@ workspace_info() {
     ' "$WORKSPACE_CONFIG"
 }
 
+workspace_sync_one() { #1: workspace 2: workspace_path
+    if ! [ -d "$2" ]; then
+        clean() {
+            WORKSPACE_ERROR=$?
+            rm -rf "$2"
+            echo "ERROR: Could not initialize $1" >&2
+            trap - EXIT INT TERM
+            exit $WORKSPACE_ERROR
+        }
+        trap clean EXIT INT TERM
+        mkdir -p "$2"
+        get_script "$1" clone | in_dir "$2" sh -e /dev/stdin || clean
+        trap - EXIT INT TERM
+    fi
+}
+
 get_script() {
     [ -e "$WORKSPACE_CONFIG" ] || die "ERROR: No config, add a workspace first"
     WORKSPACE="$1" ACTION="$2" awk '
@@ -152,20 +168,7 @@ workspace() {
     sync)
         shift
         workspace_info "$@" | while read -r WORKSPACE WORKSPACE_PATH; do
-            if ! [ -d "$WORKSPACE_PATH" ]; then
-                clean() {
-                    WORKSPACE_ERROR=$?
-                    rm -rf "$WORKSPACE_PATH"
-                    echo "ERROR: Could not initialize $WORKSPACE" >&2
-                    trap - EXIT INT TERM
-                    exit $WORKSPACE_ERROR
-                }
-                trap clean EXIT INT TERM
-                mkdir -p "$WORKSPACE_PATH"
-                get_script "$WORKSPACE" clone \
-                    | in_dir "$WORKSPACE_PATH" sh -e /dev/stdin || clean
-                trap - EXIT INT TERM
-            fi
+            workspace_sync_one "$WORKSPACE" "$WORKSPACE_PATH"
         done
         ;;
     "in")
