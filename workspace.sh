@@ -175,6 +175,7 @@ workspace() {
         shift
         WORKSPACE="$1"; shift
         workspace_info "$WORKSPACE" | while read -r WORKSPACE WORKSPACE_PATH;do
+            workspace_sync_one "$WORKSPACE" "$WORKSPACE_PATH"
             export WORKSPACE WORKSPACE_PATH
             in_dir "$WORKSPACE_PATH" "$@"
         done
