@@ -110,7 +110,7 @@ function Enter-Workspace {
     Set-Location $WorkspacePath
   }
 
-  if (Get-WorkspaceScript $Workspace) {
+  if (Get-WorkspaceScript $Workspace cd) {
     Invoke-Expression (Get-WorkspaceScript $Workspace cd)
   }
 }
