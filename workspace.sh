@@ -155,7 +155,7 @@ workspace() {
         shift
         set -- "${2-$(echo "$1" \
             | sed 's_.git/\{0,1\}$__;s_/$__;s_[^/]*:__;s_.*/__')}" "$1"
-        if fnmatch '*[!A-Za-z0-9._]*' "$1"; then
+        if fnmatch '*[!-A-Za-z0-9._]*' "$1"; then
             die "ERROR: Invalid characters in workspace name: $1"
         fi
         if grep -qE "^## ?$1(| .*)\$" "$WORKSPACE_CONFIG" 2>/dev/null; then
