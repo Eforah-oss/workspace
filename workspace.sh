@@ -81,6 +81,7 @@ workspace_info() {
     ' "$WORKSPACE_CONFIG"
 }
 
+# Create and initialize the workspace if the workspace path does not exist.
 workspace_sync_one() { #1: workspace 2: workspace_path
     if ! [ -d "$2" ]; then
         clean() {
@@ -141,6 +142,38 @@ get_script() {
         }
     ' "$WORKSPACE_CONFIG"
 }
+
+show_help() {
+  echo "Usage: workspace <command> [arguments]"
+  echo ""
+  echo "A script to manage and synchronize multiple workspaces."
+  echo ""
+  echo "Commands:"
+  echo "  add <name> <repository>       Add a new workspace with the given name"
+  echo "                                and repository URL."
+  echo "  sync [name]                   Synchronize all workspaces or a specific"
+  echo "                                workspace if a name is provided."
+  echo "  in <name> <command>           Run a command inside the specified"
+  echo "                                workspace."
+  echo "  print-bash-setup [name]       Print the Bash setup code. Name defaults"
+  echo "                                to workon"
+  echo "  print-zsh-setup [name]        Print the Zsh setup code. Name defaults"
+  echo "                                to workon"
+  echo "  workspace-info [name]         Display information about all workspaces"
+  echo "                                or a specific workspace if a name is"
+  echo "                                provided."
+  echo "  dir-of <name>                 Get the directory path of the specified"
+  echo "                                workspace."
+  echo "  script-of <name> <action>     Get the script of the specified action"
+  echo "                                for a workspace."
+  echo ""
+  echo "Options:"
+  echo "  <name>         The name of the workspace."
+  echo "  <repository>   The URL of the Git repository to be added as a workspace."
+  echo "  <command>      The command to be executed in the specified workspace."
+  echo "  <action>       The action you are getting. For example: clone"
+}
+
 
 workspace() {
     set -a
@@ -204,6 +237,7 @@ workspace() {
         get_script "$1" "$2"
         ;;
     *)
+        show_help
         return 1;
         ;;
     esac
