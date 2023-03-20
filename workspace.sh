@@ -150,7 +150,7 @@ workspace() {
     WORKSPACE_REPO_HOME="${WORKSPACE_REPO_HOME:-$XDG_DATA_HOME/workspace}"
     set +a
     mkdir -p "$WORKSPACE_REPO_HOME"
-    case "$1" in
+    case "${1:-}" in
     add)
         shift
         set -- "${2-$(echo "$1" \
@@ -202,6 +202,9 @@ workspace() {
     script-of)
         shift
         get_script "$1" "$2"
+        ;;
+    *)
+        return 1;
         ;;
     esac
 }
