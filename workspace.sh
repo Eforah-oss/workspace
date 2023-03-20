@@ -201,7 +201,7 @@ workspace() {
         ;;
     script-of)
         shift
-        get_script "$@"
+        get_script "$1" "$2"
         ;;
     esac
 }
