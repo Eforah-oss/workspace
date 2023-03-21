@@ -92,7 +92,7 @@ workspace_sync_one() { #1: workspace 2: workspace_path
         }
         trap clean EXIT INT TERM
         mkdir -p "$2"
-        get_script "$1" clone | in_dir "$2" sh -e /dev/stdin || clean
+        get_script "$1" clone | in_dir "$2" sh -e /dev/stdin >&2 || clean
         trap - EXIT INT TERM
     fi
 }
