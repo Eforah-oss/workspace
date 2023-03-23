@@ -83,13 +83,15 @@ workspace_info() {
 
 workspace_sync_one() { #1: workspace 2: workspace_path
     if ! [ -d "$2" ]; then
-        clean() {
-            WORKSPACE_ERROR=$?
-            rm -rf "$2"
-            echo "ERROR: Could not initialize $1" >&2
-            trap - EXIT INT TERM
-            exit $WORKSPACE_ERROR
-        }
+        eval '
+            clean() {
+                WORKSPACE_ERROR=$?
+                rm -rf '\'"$(escape "$2")"\''
+                echo '\''ERROR: Could not initialize '"$(escape "$1")"\'' >&2
+                trap - EXIT INT TERM
+                exit "$(($WORKSPACE_ERROR > 0 ? $WORKSPACE_ERROR : 1))"
+            }
+        '
         trap clean EXIT INT TERM
         mkdir -p "$2"
         get_script "$1" clone | in_dir "$2" sh -e /dev/stdin >&2 || clean
