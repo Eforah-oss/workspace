@@ -235,7 +235,7 @@ workspace() {
         ;;
     *)
         workspace_help
-        if [ "$1" == help ]; then exit; else return 1; fi
+        if [ "${1-}" == help ]; then exit; else return 1; fi
         ;;
     esac
 }
