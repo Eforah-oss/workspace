@@ -81,6 +81,7 @@ workspace_info() {
     ' "$WORKSPACE_CONFIG"
 }
 
+# Create and initialize the workspace if the workspace path does not exist.
 workspace_sync_one() { #1: workspace 2: workspace_path
     if ! [ -d "$2" ]; then
         eval '
@@ -144,6 +145,29 @@ get_script() {
     ' "$WORKSPACE_CONFIG"
 }
 
+workspace_help() {
+cat >&2 <<"EOF"
+Usage: workspace <command> [arguments...]
+
+Manage, initialize and quickly open workspaces.
+
+Commands:
+  add <git-url> [name]       Add new workspace (like `git clone`)
+  sync [name]                Initialize given or all workspaces
+  in <name> [cmd...]         Run cmd in name. Use '' as name for
+                             all workspaces. cmd is run as-is
+  dir-of <name>              Get path to workspace
+  script-of <name> <action>  Get script for workspace and action
+  workspace-info [name]      Info for given or all workspaces
+                             Format is 'name\tpath\n'
+  print-bash-setup [alias]   Print bash setup
+  print-zsh-setup [alias]    Print zsh setup
+
+The default alias if none is given is 'workon'.
+EOF
+}
+
+
 workspace() {
     set -a
     XDG_CONFIG_HOME="${XDG_CONFIG_HOME-$HOME/.config}"
@@ -152,9 +176,10 @@ workspace() {
     WORKSPACE_REPO_HOME="${WORKSPACE_REPO_HOME:-$XDG_DATA_HOME/workspace}"
     set +a
     mkdir -p "$WORKSPACE_REPO_HOME"
-    case "$1" in
+    case "${1:-}" in
     add)
         shift
+        [ "$#" -gt 0 ] || die "Usage: workspace add <git-url> [name]"
         set -- "${2-$(echo "$1" \
             | sed 's_.git/\{0,1\}$__;s_/$__;s_[^/]*:__;s_.*/__')}" "$1"
         if fnmatch '*[!-A-Za-z0-9._]*' "$1"; then
@@ -175,6 +200,7 @@ workspace() {
         ;;
     "in")
         shift
+        [ "$#" -gt 1 ] || die "Usage: workspace in <name> <cmd...>"
         WORKSPACE="$1"; shift
         workspace_info "$WORKSPACE" | while read -r WORKSPACE WORKSPACE_PATH;do
             workspace_sync_one "$WORKSPACE" "$WORKSPACE_PATH"
@@ -196,6 +222,7 @@ workspace() {
         ;;
     dir-of)
         shift
+        [ "$#" -eq 1 ] || die "Usage: workspace dir-of [name]"
         workspace_info "$1" | {
             read -r WORKSPACE WORKSPACE_PATH
             echo "$WORKSPACE_PATH"
@@ -203,7 +230,12 @@ workspace() {
         ;;
     script-of)
         shift
-        get_script "$@"
+        [ "$#" -eq 2 ] || die "Usage: workspace script-of [name] [action]"
+        get_script "$1" "$2"
+        ;;
+    *)
+        workspace_help
+        if [ "$1" == help ]; then exit; else return 1; fi
         ;;
     esac
 }
