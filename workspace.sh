@@ -177,7 +177,7 @@ workspace() {
     case "${1:-}" in
     add)
         shift
-         [ -z "${1:-}" ] && { show_help; return 1; }
+        [ "$#" -gt 0 ] || die "Usage: workspace add <git-url> [name]"
         set -- "${2-$(echo "$1" \
             | sed 's_.git/\{0,1\}$__;s_/$__;s_[^/]*:__;s_.*/__')}" "$1"
         if fnmatch '*[!A-Za-z0-9._]*' "$1"; then
@@ -198,9 +198,8 @@ workspace() {
         ;;
     "in")
         shift
-        [ -z "${1:-}" ] && { show_help; return 1; }
+        [ "$#" -gt 1 ] || die "Usage: workspace in <name> <cmd...>"
         WORKSPACE="$1"; shift
-        [ -z "$@" ] && { show_help; return 1; }
         workspace_info "$WORKSPACE" | while read -r WORKSPACE WORKSPACE_PATH;do
             workspace_sync_one "$WORKSPACE" "$WORKSPACE_PATH"
             export WORKSPACE WORKSPACE_PATH
@@ -221,7 +220,7 @@ workspace() {
         ;;
     dir-of)
         shift
-        [ -z "${1:-}" ] && { show_help; return 1; }
+        [ "$#" -eq 1 ] || die "Usage: workspace dir-of [name]"
         workspace_info "$1" | {
             read -r WORKSPACE WORKSPACE_PATH
             echo "$WORKSPACE_PATH"
@@ -229,12 +228,12 @@ workspace() {
         ;;
     script-of)
         shift
-        [ -z "${1:-}" ] || [ -z "${2:-}" ] && { show_help; return 1; }
+        [ "$#" -eq 2 ] || die "Usage: workspace script-of [name] [action]"
         get_script "$1" "$2"
         ;;
     *)
-        show_help
-        return 1;
+        workspace_help
+        if [ "$1" == help ]; then exit; else return 1; fi
         ;;
     esac
 }
