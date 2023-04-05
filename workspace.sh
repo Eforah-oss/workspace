@@ -143,35 +143,26 @@ get_script() {
     ' "$WORKSPACE_CONFIG"
 }
 
-show_help() {
-  echo "Usage: workspace <command> [arguments]"
-  echo ""
-  echo "A script to manage and synchronize multiple workspaces."
-  echo ""
-  echo "Commands:"
-  echo "  add <name> <repository>       Add a new workspace with the given name"
-  echo "                                and repository URL."
-  echo "  sync [name]                   Synchronize all workspaces or a specific"
-  echo "                                workspace if a name is provided."
-  echo "  in <name> <command>           Run a command inside the specified"
-  echo "                                workspace."
-  echo "  print-bash-setup [name]       Print the Bash setup code. Name defaults"
-  echo "                                to workon"
-  echo "  print-zsh-setup [name]        Print the Zsh setup code. Name defaults"
-  echo "                                to workon"
-  echo "  workspace-info [name]         Display information about all workspaces"
-  echo "                                or a specific workspace if a name is"
-  echo "                                provided."
-  echo "  dir-of <name>                 Get the directory path of the specified"
-  echo "                                workspace."
-  echo "  script-of <name> <action>     Get the script of the specified action"
-  echo "                                for a workspace."
-  echo ""
-  echo "Options:"
-  echo "  <name>         The name of the workspace."
-  echo "  <repository>   The URL of the Git repository to be added as a workspace."
-  echo "  <command>      The command to be executed in the specified workspace."
-  echo "  <action>       The action you are getting. For example: clone"
+workspace_help() {
+cat >&2 <<"EOF"
+Usage: workspace <command> [arguments...]
+
+Manage, initialize and quickly open workspaces.
+
+Commands:
+  add <git-url> [name]       Add new workspace (like `git clone`)
+  sync [name]                Initialize given or all workspaces
+  in <name> [cmd...]         Run cmd in name. Use '' as name for
+                             all workspaces. cmd is run as-is
+  dir-of <name>              Get path to workspace
+  script-of <name> <action>  Get script for workspace and action
+  workspace-info [name]      Info for given or all workspaces
+                             Format is 'name\tpath\n'
+  print-bash-setup [alias]   Print bash setup
+  print-zsh-setup [alias]    Print zsh setup
+
+The default alias if none is given is 'workon'.
+EOF
 }
 
 
