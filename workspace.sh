@@ -118,10 +118,12 @@ get_script() {
             }
             action = "clone"
             shell = ENVIRON["SHELL"]
+            next
         }
         /^###([^#].*|)$/ {
             action = $0
             sub(/^### ?/, "", action);
+            next
         }
         /^####([^#].*|)$/ {
             line = $0
@@ -135,12 +137,14 @@ get_script() {
             } else {
                 shell = line
             }
+            next
         }
-        /^[^#][^#]/ {
+        1 {
             if (ENVIRON["WORKSPACE"] != name) next;
             if (ENVIRON["ACTION"] != action) next;
             if (!match(ENVIRON["SHELL"], shell "$")) next;
             print $0
+            next
         }
     ' "$WORKSPACE_CONFIG"
 }
