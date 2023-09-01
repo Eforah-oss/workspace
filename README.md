@@ -59,9 +59,10 @@ be found at `$XDG_CONFIG_HOME/workspace/config`. `pass_clone` is the
 name of your workspace, and will default to the name of repository if
 you omit this.
 
-Then you can switch to it using `workon pass_clone`. If you run only
-`workon`, it wil present you a fuzzy finder to select your repository. You
-will currently need [fzy](https://github.com/jhawthorn/fzy) for this.
+Then you can switch to it using `workon pass_clone`. If you run
+only `workon`, it wil present you a fuzzy finder to select your
+repository. You will currently need [fzf](https://github.com/junegunn/fzf)
+or [fzy](https://github.com/jhawthorn/fzy) for this.
 
 ### Configuration
 

@@ -8,7 +8,8 @@ in_dir() ( cd "$1"; shift; "$@"; )
 print_sh_setup() {
 echo \
 "${1-workon}"'() {
-    [ $# = 1 ] || set -- "$(workspace workspace-info | cut -d\  -f1 | fzy)"
+    [ $# = 1 ] || set -- "$(workspace workspace-info | cut -d\  -f1 \
+        | "$(command -v fzf 2>/dev/null || command -v fzy 2>/dev/null)")"
     [ -n "$1" ] || return 1
     set -- "$1" "" "$(workspace dir-of "$1")"
     [ -n "$3" ] || { echo "ERROR: Unknown workspace: $1" >&2; return 1; }
