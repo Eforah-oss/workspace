@@ -58,11 +58,10 @@ escape() {
 workspace_info() {
     [ -e "$WORKSPACE_CONFIG" ] || die "ERROR: No config, add a workspace first"
     WORKSPACE="${1-}" awk '
-        /^##([^#].*|)$/ {
+        /^##[^#].*$/ {
             sub(/^## ?/, "");
             name = $0
             path = name
-            if (length(name) == 0) next;
             if (match(name, /^[^ ]* /)) {
                 name = substr($0, 1, RLENGTH - 1)
                 path = substr($0, RLENGTH + 1)
@@ -109,7 +108,7 @@ get_script() {
             action = ENVIRON["ACTION"]
             shell = ENVIRON["SHELL"]
         }
-        /^##([^#].*|)$/ {
+        /^(##[^#].*|##)$/ {
             name = $0
             sub(/^## ?/, "", name);
             if (match(name, /^([^\\]|\\.|[^ ])* /)) {
@@ -121,12 +120,12 @@ get_script() {
             shell = ENVIRON["SHELL"]
             next
         }
-        /^###([^#].*|)$/ {
+        /^(###[^#].*|###)$/ {
             action = $0
             sub(/^### ?/, "", action);
             next
         }
-        /^####([^#].*|)$/ {
+        /^(####[^#].*|####)$/ {
             line = $0
             sub(/^#### ?/, "", line);
             if (line == "") {
