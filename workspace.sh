@@ -193,7 +193,9 @@ workspace() {
             die "ERROR: Already added"
         fi
         mkdir -p "$(dirname "$WORKSPACE_CONFIG")"
-        printf "## %s\ngit clone %s .\n" "$1" "$(escape "$2")" \
+        printf "%s %s\ngit clone %s .\n" \
+            "$([ -e "$WORKSPACE_CONFIG" ] && printf '\n##' || printf '##')" \
+            "$1" "$(escape "$2")" \
             >>"$WORKSPACE_CONFIG"
         ;;
     sync)
