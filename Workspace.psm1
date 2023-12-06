@@ -2,8 +2,9 @@ function Get-WorkspaceConfig {
   $config = & {
     if ($env:WORKSPACE_CONFIG) {
       $env:WORKSPACE_CONFIG
-    }
-    else {
+    } elseif ($env:XDG_CONFIG_HOME) {
+      "$env:XDG_CONFIG_HOME/workspace/config"
+    } else {
       "$([Environment]::GetFolderPath('ApplicationData'))/workspace/config"
     } }
   if (!(Test-Path $config)) {
