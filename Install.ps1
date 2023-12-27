@@ -1,3 +1,5 @@
+#/usr/bin/env pwsh
+
 $ModuleRoot = "$(
   if (([System.Environment]::OSVersion.Platform -eq "Win32NT") `
         -or ($PSVersionTable.Platform -eq "Windows")) {
