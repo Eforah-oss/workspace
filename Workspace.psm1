@@ -22,8 +22,12 @@ function Get-Workspaces {
 function Get-WorkspacePath {
   param($Workspace)
   if ($null -eq $env:WORKSPACE_REPO_HOME) {
-    $env:WORKSPACE_REPO_HOME = `
-      "$([Environment]::GetFolderPath('LocalApplicationData'))/workspace"
+    if ($env:XDG_DATA_HOME) {
+      $env:WORKSPACE_REPO_HOME = "$env:XDG_DATA_HOME/workspace"
+    } else {
+      $env:WORKSPACE_REPO_HOME = `
+        "$([Environment]::GetFolderPath('LocalApplicationData'))/workspace"
+    }
   }
   Get-WorkspaceConfig `
   | Select-String "^## ?($Workspace)( (.*))?$" `

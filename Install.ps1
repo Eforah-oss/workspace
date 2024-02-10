@@ -5,6 +5,9 @@ $ModuleRoot = "$(
         -or ($PSVersionTable.Platform -eq "Windows")) {
     "$([Environment]::GetFolderPath("MyDocuments"))/WindowsPowerShell"
   }
+  elseif ($env:XDG_DATA_HOME) {
+    "$env:XDG_DATA_HOME/powershell"
+  }
   else {
     "$([Environment]::GetFolderPath('LocalApplicationData'))/powershell"
   }
