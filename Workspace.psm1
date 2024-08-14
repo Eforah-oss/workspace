@@ -10,11 +10,11 @@ function Get-WorkspaceConfig {
   if (!(Test-Path $config)) {
     throw "No config, add a workspace first"
   }
-  Get-Content $config
+  $config
 }
 
 function Get-Workspaces {
-  Get-WorkspaceConfig `
+  Get-Content (Get-WorkspaceConfig) `
   | Select-String '^## ?([^#][^ ]*)' `
   | ForEach-Object { $_.Matches.Groups[1].Value }
 }
@@ -29,7 +29,7 @@ function Get-WorkspacePath {
         "$([Environment]::GetFolderPath('LocalApplicationData'))/workspace"
     }
   }
-  Get-WorkspaceConfig `
+  Get-Content (Get-WorkspaceConfig) `
   | Select-String "^## ?($Workspace)( (.*))?$" `
   | ForEach-Object { if ($_.Matches.Groups[3].Value) {
       (($_.Matches.Groups[3].Value | Select-String -AllMatches `
@@ -65,7 +65,7 @@ function Get-WorkspaceScript {
   $currentWorkspace = $Workspace;
   $currentAction = $Action;
   $currentShell = "powershell";
-  (Get-WorkspaceConfig | ForEach-Object {
+  (Get-Content (Get-WorkspaceConfig) | ForEach-Object {
     switch -Regex ($_) {
       "^## ?([^#][^ ]*)( (.*))?$" {
         if ($Matches[1].Length -gt 0) { $currentWorkspace = $Matches.1 }
