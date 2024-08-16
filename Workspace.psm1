@@ -102,7 +102,16 @@ function Enter-Workspace {
     $Workspace
   )
   if (!$Workspace) {
-    $Workspace = (Get-Workspaces | Invoke-Fzf)
+    if (Get-Command -Name fzf -ErrorAction SilentlyContinue) {
+      $NextWorkspace = (Get-Workspaces | fzf)
+      if ($LastExitCode -ne 0) {
+        return
+      }
+      $Workspace = $NextWorkspace
+    }
+    else {
+      throw "fzf not found. Install it to use the fuzzy finder functionality."
+    }
   }
 
   $WorkspacePath = (Get-WorkspacePath $Workspace)
