@@ -3,7 +3,12 @@
 $ModuleRoot = "$(
   if (([System.Environment]::OSVersion.Platform -eq "Win32NT") `
         -or ($PSVersionTable.Platform -eq "Windows")) {
-    "$([Environment]::GetFolderPath("MyDocuments"))/WindowsPowerShell"
+    if ($PSVersionTable.PSVersion.Major -ge 7) {
+      "$([Environment]::GetFolderPath("MyDocuments"))/PowerShell"
+    }
+    else {
+      "$([Environment]::GetFolderPath("MyDocuments"))/WindowsPowerShell"
+    }
   }
   elseif ($env:XDG_DATA_HOME) {
     "$env:XDG_DATA_HOME/powershell"
