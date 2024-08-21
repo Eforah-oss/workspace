@@ -123,8 +123,8 @@ get_script() {
         /^(##[^#].*|##)$/ {
             name = $0
             sub(/^## ?/, "", name);
-            if (match(name, /^([^\\]|\\.|[^ ])* /)) {
-                name = substr(name, 1, RLENGTH - 1)
+            if (match(name, /[^\\] /)) {
+                name = substr(name, 1, RSTART)
             } else if (length(name) == 0) {
                 name = ENVIRON["WORKSPACE"]
             }
