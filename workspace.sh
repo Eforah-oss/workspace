@@ -56,7 +56,8 @@ _'"${1-workon}"'() {
         workspace workspace-info | cut -d\  -f1)}})"
 }
 
-compdef _'"${1-workon}"' '"${1-workon}"'
+! command -v compdef >/dev/null 2>&1 \
+    || compdef _'"${1-workon}"' '"${1-workon}"'
 '
 }
 
