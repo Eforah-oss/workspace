@@ -22,7 +22,7 @@ eval "$(
     workspace workspace-info | awk -F "^[^ ]* " "
         \$2 == ENVIRON[\"PWD\"] {
             w = substr(\$0, 0, length(\$0) - length(\$2) - 1);
-            gsub(/[^A-Za-z0-9:_/.+@-]/, \"\\\\\\\\&\", w);
+            gsub(\"[^A-Za-z0-9:_/.+@-]\", \"\\\\\\\\&\", w);
             while (((\"workspace script-of \" w \" cd\") | getline x) > 0) {
                 print x
             }
@@ -56,7 +56,8 @@ _'"${1-workon}"'() {
         workspace workspace-info | cut -d\  -f1)}})"
 }
 
-compdef _'"${1-workon}"' '"${1-workon}"'
+! command -v compdef >/dev/null 2>&1 \
+    || compdef _'"${1-workon}"' '"${1-workon}"'
 '
 }
 
@@ -123,8 +124,8 @@ get_script() {
         /^(##[^#].*|##)$/ {
             name = $0
             sub(/^## ?/, "", name);
-            if (match(name, /^([^\\]|\\.|[^ ])* /)) {
-                name = substr(name, 1, RLENGTH - 1)
+            if (match(name, /[^\\] /)) {
+                name = substr(name, 1, RSTART)
             } else if (length(name) == 0) {
                 name = ENVIRON["WORKSPACE"]
             }
