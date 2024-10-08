@@ -22,7 +22,7 @@ eval "$(
     workspace workspace-info | awk -F "^[^ ]* " "
         \$2 == ENVIRON[\"PWD\"] {
             w = substr(\$0, 0, length(\$0) - length(\$2) - 1);
-            gsub(/[^A-Za-z0-9:_/.+@-]/, \"\\\\\\\\&\", w);
+            gsub(\"[^A-Za-z0-9:_/.+@-]\", \"\\\\\\\\&\", w);
             while (((\"workspace script-of \" w \" cd\") | getline x) > 0) {
                 print x
             }
