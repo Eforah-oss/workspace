@@ -119,6 +119,13 @@ function Enter-Workspace {
     New-Item -Type Directory $WorkspacePath 1>$null
     Set-Location $WorkspacePath
     Invoke-Expression (Get-WorkspaceScript $Workspace clone)
+
+    if (([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
+      $parentAcl = Get-Acl (Get-Item (Split-Path $WorkspacePath -Parent))
+      Set-Acl -Path $WorkspacePath -AclObject $parentAcl
+      Get-ChildItem $WorkspacePath -Recurse -Force | `
+        ForEach-Object { Set-Acl -Path $_.FullName -AclObject $parentAcl }
+    }
   }
   else {
     Set-Location $WorkspacePath
