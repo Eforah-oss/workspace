@@ -1,70 +1,77 @@
 #!/usr/bin/env sh
 set -eu
 
-die() { if [ "$#" -gt 0 ]; then printf "%s\n" "$*" >&2; fi; exit 1; }
-fnmatch() { case "$2" in $1) return 0 ;; *) return 1 ;; esac ; }
-in_dir() ( cd "$1"; shift; "$@"; )
+die() { if [ "$#" -gt 0 ]; then printf "%s\n" "$*" >&2; fi && exit 1; }
+fnmatch() { case "$2" in $1) return 0 ;; *) return 1 ;; esac }
+in_dir() (cd "$1" && shift && "$@")
 
 print_sh_setup() {
-echo \
-"${1-workon}"'() {
-    [ $# = 1 ] || set -- "$(workspace workspace-info | cut -d\  -f1 \
-        | "$(command -v fzf 2>/dev/null || command -v fzy 2>/dev/null)")"
-    [ -n "$1" ] || return 1
-    set -- "$1" "" "$(workspace dir-of "$1")"
-    [ -n "$3" ] || { echo "ERROR: Unknown workspace: $1" >&2; return 1; }
-    [ -d "$3" ] || workspace sync "$1" || return $?
-    cd "$3"
-    eval "$(workspace script-of "$1" cd)"
-}
-
-eval "$(
-    workspace workspace-info | awk -F "^[^ ]* " "
-        \$2 == ENVIRON[\"PWD\"] {
-            w = substr(\$0, 0, length(\$0) - length(\$2) - 1);
-            gsub(\"[^A-Za-z0-9:_/.+@-]\", \"\\\\\\\\&\", w);
-            while (((\"workspace script-of \" w \" cd\") | getline x) > 0) {
-                print x
-            }
+    printf %s \
+        "${1-workon}"'() {
+            [ $# = 1 ] || set -- "$(
+                workspace workspace-info | cut -d\  -f1 \
+                    | "$( (command -v fzf || command -v fzy) 2>/dev/null)"
+            )"
+            [ -n "$1" ] || return 1
+            set -- "$1" "" "$(workspace dir-of "$1")"
+            [ -n "$3" ] \
+                || { echo "ERROR: Unknown workspace: $1" >&2 && return 1; }
+            [ -d "$3" ] || workspace sync "$1" || return $?
+            cd "$3"
+            eval "$(workspace script-of "$1" cd)"
         }
-    "
-)"
-'
+
+        eval "$(
+            workspace workspace-info | awk -F "^[^ ]* " "
+                \$2 == ENVIRON[\"PWD\"] {
+                    w = substr(\$0, 0, length(\$0) - length(\$2) - 1);
+                    gsub(\"[^A-Za-z0-9:_/.+@-]\", \"\\\\\\\\&\", w);
+                    while ( \
+                        ((\"workspace script-of \" w \" cd\") | getline x) \
+                        > 0 \
+                    ) {
+                        print x
+                    }
+                }
+            "
+        )"
+    '
 }
 
 print_bash_setup() {
-print_sh_setup "$@"
-echo '
-_'"${1-workon}"'() {
-    [ "$3" = "'"${1-workon}"'" ] || return
-    local workspaces workspace
-    COMPREPLY=()
-    <<<"$(workspace workspace-info)" readarray -t workspaces
-    for workspace in "${workspaces[@]%% *}"; do
-        ! [[ "$workspace" =~ ^$2 ]] || COMPREPLY+=("$workspace")
-    done
-}
-complete -F _'"${1-workon}"' '"${1-workon}"'
-'
+    print_sh_setup "$@"
+    printf %s '
+        _'"${1-workon}"'() {
+            [ "$3" = "'"${1-workon}"'" ] || return
+            local workspaces workspace
+            COMPREPLY=()
+            <<<"$(workspace workspace-info)" readarray -t workspaces
+            for workspace in "${workspaces[@]%% *}"; do
+                ! [[ "$workspace" =~ ^$2 ]] || COMPREPLY+=("$workspace")
+            done
+        }
+        complete -F _'"${1-workon}"' '"${1-workon}"'
+    '
 }
 
 print_zsh_setup() {
-print_sh_setup "$@"
-echo '
-_'"${1-workon}"'() {
-    _arguments "1:workspace name:(${(j: :)${(@fq-)$(\
-        workspace workspace-info | cut -d\  -f1)}})"
-}
+    print_sh_setup "$@"
+    printf %s '
+        _'"${1-workon}"'() {
+            _arguments "1:workspace name:(${(j: :)${(@fq-)$(\
+                workspace workspace-info | cut -d\  -f1
+            )}})"
+        }
 
-! command -v compdef >/dev/null 2>&1 \
-    || compdef _'"${1-workon}"' '"${1-workon}"'
-'
+        ! command -v compdef >/dev/null 2>&1 \
+            || compdef _'"${1-workon}"' '"${1-workon}"'
+    '
 }
 
 escape() {
     case "$1" in
-    *[!A-Za-z0-9:_/.+@-]*) echo "$1" | sed "s/'/'\\''/g;s/^/'/;s/$/'/";;
-    *) echo "$1";;
+    *[!A-Za-z0-9:_/.+@-]*) printf %s "$1" | sed "s/'/'\\''/g;s/^/'/;s/$/'/" ;;
+    *) printf %s "$1" ;;
     esac
 }
 
@@ -163,27 +170,25 @@ get_script() {
 }
 
 workspace_help() {
-cat >&2 <<"EOF"
-Usage: workspace <command> [arguments...]
-
-Manage, initialize and quickly open workspaces.
-
-Commands:
-  add <git-url> [name]       Add new workspace (like `git clone`)
-  sync [name]                Initialize given or all workspaces
-  in <name> [cmd...]         Run cmd in name. Use '' as name for
-                             all workspaces. cmd is run as-is
-  dir-of <name>              Get path to workspace
-  script-of <name> <action>  Get script for workspace and action
-  workspace-info [name]      Info for given or all workspaces
-                             Format is 'name\tpath\n'
-  print-bash-setup [alias]   Print bash setup
-  print-zsh-setup [alias]    Print zsh setup
-
-The default alias if none is given is 'workon'.
-EOF
+    >&2 printf %s\\n \
+        "Usage: workspace <command> [arguments...]" \
+        "" \
+        "Manage, initialize and quickly open workspaces." \
+        "" \
+        "Commands:" \
+        "  add <git-url> [name]       Add new workspace (like \`git clone\`)" \
+        "  sync [name]                Initialize given or all workspaces" \
+        "  in <name> [cmd...]         Run cmd in name. Use '' as name for" \
+        "                             all workspaces. cmd is run as-is" \
+        "  dir-of <name>              Get path to workspace" \
+        "  script-of <name> <action>  Get script for workspace and action" \
+        "  workspace-info [name]      Info for given or all workspaces" \
+        "                             Format is 'name\tpath\n'" \
+        "  print-bash-setup [alias]   Print bash setup" \
+        "  print-zsh-setup [alias]    Print zsh setup" \
+        "" \
+        "The default alias if none is given is 'workon'."
 }
-
 
 workspace() {
     set -a
@@ -197,7 +202,7 @@ workspace() {
     add)
         shift
         [ "$#" -gt 0 ] || die "Usage: workspace add <git-url> [name]"
-        set -- "${2-$(echo "$1" \
+        set -- "${2-$(printf %s\\n "$1" \
             | sed 's_.git/\{0,1\}$__;s_/$__;s_[^/]*:__;s_.*/__')}" "$1"
         if fnmatch '*[!-A-Za-z0-9._]*' "$1"; then
             die "ERROR: Invalid characters in workspace name: $1"
@@ -220,12 +225,13 @@ workspace() {
     "in")
         shift
         [ "$#" -gt 1 ] || die "Usage: workspace in <name> <cmd...>"
-        WORKSPACE="$1"; shift
-        workspace_info "$WORKSPACE" | while read -r WORKSPACE WORKSPACE_PATH;do
-            workspace_sync_one "$WORKSPACE" "$WORKSPACE_PATH"
-            export WORKSPACE WORKSPACE_PATH
-            in_dir "$WORKSPACE_PATH" "$@"
-        done
+        WORKSPACE="$1" && shift
+        workspace_info "$WORKSPACE" \
+            | while read -r WORKSPACE WORKSPACE_PATH; do
+                workspace_sync_one "$WORKSPACE" "$WORKSPACE_PATH"
+                export WORKSPACE WORKSPACE_PATH
+                in_dir "$WORKSPACE_PATH" "$@"
+            done
         ;;
     print-bash-setup)
         shift
@@ -244,7 +250,7 @@ workspace() {
         [ "$#" -eq 1 ] || die "Usage: workspace dir-of [name]"
         workspace_info "$1" | {
             read -r WORKSPACE WORKSPACE_PATH
-            echo "$WORKSPACE_PATH"
+            printf %s\\n "$WORKSPACE_PATH"
         }
         ;;
     script-of)
