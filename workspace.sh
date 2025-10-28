@@ -226,12 +226,14 @@ workspace() {
         shift
         [ "$#" -gt 1 ] || die "Usage: workspace in <name> <cmd...>"
         WORKSPACE="$1" && shift
+        exec 3<&0
         workspace_info "$WORKSPACE" \
             | while read -r WORKSPACE WORKSPACE_PATH; do
                 workspace_sync_one "$WORKSPACE" "$WORKSPACE_PATH"
                 export WORKSPACE WORKSPACE_PATH
-                in_dir "$WORKSPACE_PATH" "$@"
+                <&3 in_dir "$WORKSPACE_PATH" "$@"
             done
+        exec 3<&-
         ;;
     print-bash-setup)
         shift
