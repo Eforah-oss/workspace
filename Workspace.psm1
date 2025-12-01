@@ -129,6 +129,26 @@ function Enter-Workspace {
   }
 }
 
+function workspace {
+  param(
+    [Parameter(Position = 0)]
+    [ValidateScript( { $_ -in ('add', 'sync', 'in') })]
+    [ArgumentCompleter(
+      {
+        param($cmd, $param, $wordToComplete)
+        ('add', 'sync', 'in') -like "$wordToComplete*"
+      }
+    )]
+    $Command
+  )
+  switch ($Command) {
+    "add" {
+      throw "Not Implemented Yet"
+    }
+  }
+}
+
+Export-ModuleMember workspace
 Export-ModuleMember Get-Workspaces
 Export-ModuleMember Get-WorkspacePath
 Export-ModuleMember Get-WorkspaceScript
