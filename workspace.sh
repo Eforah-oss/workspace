@@ -1,4 +1,5 @@
 #!/usr/bin/env sh
+# shellcheck disable=SC2016,SC2254
 set -eu
 
 die() { if [ "$#" -gt 0 ]; then printf "%s\n" "$*" >&2; fi && exit 1; }
@@ -191,12 +192,11 @@ workspace_help() {
 }
 
 workspace() {
-    set -a
     XDG_CONFIG_HOME="${XDG_CONFIG_HOME-$HOME/.config}"
     XDG_DATA_HOME="${XDG_DATA_HOME-$HOME/.local/share}"
     WORKSPACE_CONFIG="${WORKSPACE_CONFIG-$XDG_CONFIG_HOME/workspace/config}"
     WORKSPACE_REPO_HOME="${WORKSPACE_REPO_HOME:-$XDG_DATA_HOME/workspace}"
-    set +a
+    export XDG_CONFIG_HOME XDG_DATA_HOME WORKSPACE_CONFIG WORKSPACE_REPO_HOME
     mkdir -p "$WORKSPACE_REPO_HOME"
     case "${1:-}" in
     add)
