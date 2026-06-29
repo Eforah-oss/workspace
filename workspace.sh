@@ -55,6 +55,39 @@ print_bash_setup() {
     '
 }
 
+print_fish_setup() {
+    printf %s '
+        function '"${1-workon}"' --argument-names name
+            if test -z "$name"
+                set -l picker (command -v fzf; or command -v fzy)
+                set name (workspace workspace-info | cut -d\  -f1 | $picker)
+            end
+            test -n "$name"; or return 1
+            set -l dir (workspace dir-of "$name")
+            if test -z "$dir"
+                echo "ERROR: Unknown workspace: $name" >&2
+                return 1
+            end
+            test -d "$dir"; or workspace sync "$name"; or return $status
+            cd "$dir"; or return $status
+            eval (workspace script-of "$name" cd | string collect)
+        end
+
+        workspace workspace-info | while read -l name dir
+            test "$dir" = "$PWD"; or continue
+            eval (workspace script-of "$name" cd | string collect)
+            break
+        end
+
+        function __'"${1-workon}"'_complete_workspaces
+            workspace workspace-info | cut -d\  -f1
+        end
+        complete -c '"${1-workon}"' -f -n __fish_is_first_arg \
+            -a '\''(__'"${1-workon}"'_complete_workspaces)'\''
+        complete -c '"${1-workon}"' -f -n '\''not __fish_is_first_arg'\''
+    '
+}
+
 print_zsh_setup() {
     print_sh_setup "$@"
     printf %s '
@@ -186,6 +219,7 @@ workspace_help() {
         "  workspace-info [name]      Info for given or all workspaces" \
         "                             Format is 'name\tpath\n'" \
         "  print-bash-setup [alias]   Print bash setup" \
+        "  print-fish-setup [alias]   Print fish setup" \
         "  print-zsh-setup [alias]    Print zsh setup" \
         "" \
         "The default alias if none is given is 'workon'."
@@ -238,6 +272,10 @@ workspace() {
     print-bash-setup)
         shift
         print_bash_setup "$@"
+        ;;
+    print-fish-setup)
+        shift
+        print_fish_setup "$@"
         ;;
     print-zsh-setup)
         shift

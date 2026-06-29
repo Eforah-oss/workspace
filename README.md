@@ -38,6 +38,10 @@ your shell configuration:
 
       eval "$(workspace print-bash-setup workon)"
 
+- **Fish** (`~/.config/fish/config.fish`):
+
+      eval (workspace print-fish-setup workon | string collect)
+
 - **Zsh** (`~/.zshrc`):
 
       eval "$(workspace print-zsh-setup workon)"
