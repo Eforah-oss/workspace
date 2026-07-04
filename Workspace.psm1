@@ -61,30 +61,25 @@ function Get-WorkspacePath {
 }
 
 function Get-WorkspaceScript {
-  param($Workspace, $Action)
-  $currentWorkspace = $Workspace;
-  $currentAction = $Action;
-  $currentShell = "powershell";
+  param($Workspace, $Action, $Shell = "powershell")
+  $currentWorkspace = "";
+  $currentAction = "";
+  $currentShell = "";
   (Get-Content (Get-WorkspaceConfig) | ForEach-Object {
     switch -Regex ($_) {
       "^## ?([^#][^ ]*)( (.*))?$" {
-        if ($Matches[1].Length -gt 0) { $currentWorkspace = $Matches.1 }
-        else { $currentWorkspace = $Workspace }
+        $currentWorkspace = $Matches.1
         $currentAction = "clone"
-        $currentShell = "powershell"
+        $currentShell = ""
       }
       "^### ?([^#].*|)$" { $currentAction = $Matches.1 }
-      "^#### ?([^#].*|)$" {
-        if ($Matches[1].Length -gt 0) { $currentShell = $Matches.1 }
-        else { $currentShell = "powershell" }
-      }
-      default {
-        if ($currentWorkspace -eq $Workspace `
-            -and $currentAction -eq $Action `
-            -and $currentShell -eq "powershell")
-        { $_ }
-      }
+      "^#### ?([^#].*|)$" { $currentShell = $Matches.1 }
     }
+    if (
+      (($Workspace -eq $currentWorkspace) -or ($currentWorkspace -eq "")) `
+        -and (($Action -eq $currentAction) -or ($currentAction -eq "")) `
+        -and (($Shell -eq $currentShell) -or ($currentShell -eq ""))
+    ) { $_ }
   }) -join "`n"
 }
 

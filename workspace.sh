@@ -149,56 +149,51 @@ workspace_sync_one() { #1: workspace 2: workspace_path
         '
         trap clean EXIT INT TERM
         mkdir -p "$2"
-        get_script "$1" clone | in_dir "$2" sh -e /dev/stdin >&2 || clean
+        WORKSPACE="$1" ACTION="clone" get_script \
+            | in_dir "$2" sh -e /dev/stdin >&2 || clean
         trap - EXIT INT TERM
     fi
 }
 
 get_script() {
     [ -e "$WORKSPACE_CONFIG" ] || die "ERROR: No config, add a workspace first"
-    WORKSPACE="$1" ACTION="$2" awk '
+    awk '
         BEGIN {
-            name = ENVIRON["WORKSPACE"]
-            action = ENVIRON["ACTION"]
-            shell = ENVIRON["SHELL"]
+            name = ""
+            action = ""
+            shell = ""
         }
         /^(##[^#].*|##)$/ {
             name = $0
-            sub(/^## ?/, "", name);
+            sub(/^## ?/, "", name)
             if (match(name, /[^\\] /)) {
                 name = substr(name, 1, RSTART)
             } else if (length(name) == 0) {
-                name = ENVIRON["WORKSPACE"]
+                name = ""
             }
             action = "clone"
-            shell = ENVIRON["SHELL"]
-            next
+            shell = ""
         }
         /^(###[^#].*|###)$/ {
             action = $0
-            sub(/^### ?/, "", action);
-            next
+            sub(/^### ?/, "", action)
         }
         /^(####[^#].*|####)$/ {
-            line = $0
-            sub(/^#### ?/, "", line);
-            if (line == "") {
-                shell = ENVIRON["SHELL"]
-            } else if (!match(line, /^[A-Za-z0-9_.]*$/)) {
-                print "WARNING: " FILENAME ":" FNR ": Invalid shell: " line \
+            shell = $0
+            sub(/^#### ?/, "", shell);
+            if (!match(shell, /^[A-Za-z0-9_.]*$/)) {
+                print "WARNING: " FILENAME ":" FNR ": Invalid shell: " shell \
                     >"/dev/stderr"
                 shell = "/" #Can not match a shell
-            } else {
-                shell = line
             }
-            next
         }
         1 {
-            if (ENVIRON["WORKSPACE"] != name) next;
-            if (ENVIRON["ACTION"] != action) next;
-            if (!match(ENVIRON["SHELL"], shell "$")) next;
-            print $0
-            next
+            if ( \
+                (ENVIRON["WORKSPACE"] == name || "" == name) \
+                && (ENVIRON["ACTION"] == action || "" == action) \
+                && (match(ENVIRON["SHELL"], shell "$") || "" == shell) \
+            )
+                print $0
         }
     ' "$WORKSPACE_CONFIG"
 }
@@ -299,7 +294,7 @@ workspace() {
     script-of)
         shift
         [ "$#" -eq 2 ] || die "Usage: workspace script-of [name] [action]"
-        get_script "$1" "$2"
+        WORKSPACE="$1" ACTION="$2" get_script
         ;;
     *)
         workspace_help
