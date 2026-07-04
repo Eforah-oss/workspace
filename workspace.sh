@@ -241,7 +241,10 @@ workspace() {
         if fnmatch '*[!-A-Za-z0-9._]*' "$1"; then
             die "ERROR: Invalid characters in workspace name: $1"
         fi
-        if grep -qE "^## ?$1(| .*)\$" "$WORKSPACE_CONFIG" 2>/dev/null; then
+        if
+            [ -e "$WORKSPACE_CONFIG" ] \
+                && [ -n "$(workspace_info --name="$1" 2>/dev/null)" ]
+        then
             die "ERROR: Already added"
         fi
         mkdir -p "$(dirname "$WORKSPACE_CONFIG")"
