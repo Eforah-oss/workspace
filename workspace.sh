@@ -10,7 +10,7 @@ print_sh_setup() {
     printf %s \
         "${1-workon}"'() {
             [ $# = 1 ] || set -- "$(
-                workspace workspace-info | cut -d\  -f1 \
+                workspace info | cut -d\  -f1 \
                     | "$( (command -v fzf || command -v fzy) 2>/dev/null)"
             )"
             [ -n "$1" ] || return 1
@@ -23,7 +23,7 @@ print_sh_setup() {
         }
 
         eval "$(
-            workspace workspace-info | awk -F "^[^ ]* " "
+            workspace info | awk -F "^[^ ]* " "
                 \$2 == ENVIRON[\"PWD\"] {
                     w = substr(\$0, 0, length(\$0) - length(\$2) - 1);
                     gsub(\"[^A-Za-z0-9:_/.+@-]\", \"\\\\\\\\&\", w);
@@ -46,7 +46,7 @@ print_bash_setup() {
             [ "$3" = "'"${1-workon}"'" ] || return
             local workspaces workspace
             COMPREPLY=()
-            <<<"$(workspace workspace-info)" readarray -t workspaces
+            <<<"$(workspace info)" readarray -t workspaces
             for workspace in "${workspaces[@]%% *}"; do
                 ! [[ "$workspace" =~ ^$2 ]] || COMPREPLY+=("$workspace")
             done
@@ -60,7 +60,7 @@ print_fish_setup() {
         function '"${1-workon}"' --argument-names name
             if test -z "$name"
                 set -l picker (command -v fzf; or command -v fzy)
-                set name (workspace workspace-info | cut -d\  -f1 | $picker)
+                set name (workspace info | cut -d\  -f1 | $picker)
             end
             test -n "$name"; or return 1
             set -l dir (workspace dir-of "$name")
@@ -73,14 +73,14 @@ print_fish_setup() {
             eval (workspace script-of "$name" cd | string collect)
         end
 
-        workspace workspace-info | while read -l name dir
+        workspace info | while read -l name dir
             test "$dir" = "$PWD"; or continue
             eval (workspace script-of "$name" cd | string collect)
             break
         end
 
         function __'"${1-workon}"'_complete_workspaces
-            workspace workspace-info | cut -d\  -f1
+            workspace info | cut -d\  -f1
         end
         complete -c '"${1-workon}"' -f -n __fish_is_first_arg \
             -a '\''(__'"${1-workon}"'_complete_workspaces)'\''
@@ -93,7 +93,7 @@ print_zsh_setup() {
     printf %s '
         _'"${1-workon}"'() {
             _arguments "1:workspace name:(${(j: :)${(@fq-)$(\
-                workspace workspace-info | cut -d\  -f1
+                workspace info | cut -d\  -f1
             )}})"
         }
 
@@ -209,10 +209,10 @@ workspace_help() {
         "  sync [name]                Initialize given or all workspaces" \
         "  in <name> [cmd...]         Run cmd in name. Use '' as name for" \
         "                             all workspaces. cmd is run as-is" \
+        "  info [name]                Info for given or all workspaces" \
+        "                             Format is 'name path\n'" \
         "  dir-of <name>              Get path to workspace" \
         "  script-of <name> <action>  Get script for workspace and action" \
-        "  workspace-info [name]      Info for given or all workspaces" \
-        "                             Format is 'name\tpath\n'" \
         "  print-bash-setup [alias]   Print bash setup" \
         "  print-fish-setup [alias]   Print fish setup" \
         "  print-zsh-setup [alias]    Print zsh setup" \
@@ -279,7 +279,7 @@ workspace() {
         shift
         print_zsh_setup "$@"
         ;;
-    workspace-info)
+    info)
         shift
         workspace_info "$@"
         ;;
