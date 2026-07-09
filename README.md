@@ -15,37 +15,41 @@ should run unmodified on your MacBook, WSL or router, if that floats your goat.
 
 ### Installation
 
-#### Linux/WSL/macOS/... (Unix)
+Assuming you have already cloned this repository:
 
-If you put your binaries in `~/.local/bin`:
+- **Linux/WSL/macOS/... (Unix)**:  
+  Run make install like:
 
-    PREFIX="$HOME/.local" make install
+      PREFIX="$HOME/.local" make install
 
-If you can't figure this out and want to use this tool anyway, message me.
+    If `~/.local/bin` is not in your path, make sure to prepend a line like
+    `PATH="$PATH:$HOME/.local/bin"` when applying the shell-specific
+    configuration below.
 
-Afterwards, add something like this to your `.bashrc`:
+- **PowerShell**:  
+  Run `./Install.ps1`, which will put the Workspace module where PowerShell
+  expects it. PowerShell support is very new and does not work like the Unix
+  version yet.
 
-    eval "$(workspace print-bash-setup workon)"
+Afterwards, enable the shell-specific integration by adding a line like this to
+your shell configuration:
 
-Or, if you use Zsh, your `.zshrc`:
+- **Bash** (`~/.bashrc`):
 
-    eval "$(workspace print-zsh-setup workon)"
+      eval "$(workspace print-bash-setup workon)"
 
-The word `workon` is the default value and can be omitted, but is the name for
-the shell function that you can use to switch to a workspace.
+- **Zsh** (`~/.zshrc`):
 
-#### Windows/PowerShell
+      eval "$(workspace print-zsh-setup workon)"
 
-Run `./Install.ps1`, which will put the Workspace module where PowerShell
-expects it. PowerShell support is very new and does not work like the Unix
-version yet.
+- **PowerShell** has a few different locations for its configuration, but you
+  probably want to add it to `$PROFILE.CurrentUserAllHosts`:
 
-To set an alias for `Enter-Workspace` (which works like `workon` below), add
-something like
+      Set-Alias workon Enter-Workspace
 
-    Set-Alias workon Enter-Workspace
-
-to your PowerShell profile.
+The word `workon` is the default value and can be omitted in everything but
+PowerShell, but is the name for the shell function that you can use to switch
+to a workspace.
 
 ### Usage
 

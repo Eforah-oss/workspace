@@ -3,6 +3,7 @@
 .PHONY: install uninstall
 
 install: workspace.sh
+	mkdir -p "${DESTDIR}${PREFIX}/bin"
 	cp workspace.sh "${DESTDIR}${PREFIX}/bin/workspace"
 	chmod 755 "${DESTDIR}${PREFIX}/bin/workspace"
 
