@@ -241,7 +241,13 @@ function Enter-Workspace {
   )
   $Paths = (Get-WorkspacePaths)
   if (!$Workspace) {
-    if (Get-Command -Name fzf -ErrorAction SilentlyContinue) {
+    if (Get-Command -Name Invoke-Fzf -ErrorAction SilentlyContinue) {
+      $Workspace = ($Paths.Keys | Invoke-Fzf)
+      if (!$Workspace) {
+        return
+      }
+    }
+    elseif (Get-Command -Name fzf -ErrorAction SilentlyContinue) {
       $Workspace = ($Paths.Keys | fzf)
       if ($global:LASTEXITCODE -ne 0) {
         return
