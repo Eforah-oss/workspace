@@ -7,11 +7,10 @@
 
 Using `workspace` you can configure the repositories you use. This means that
 they are automatically cloned when you want to use them. It also integrates
-with your shell, so you can easily cd to them.
-
-`workspace` is heavily inspired by [fw](https://github.com/brocode/fw). The
-difference is that this is written in simple (YMMV) POSIX shell script, so
-should run unmodified on your MacBook, WSL or router, if that floats your goat.
+with your shell, so you can easily cd to them. It is written in both simple
+(YMMV) POSIX shell script and PowerShell (5.1-compatible), so should run
+unmodified on your Linux distro, MacBook, Windows, WSL or router, if that
+floats your goat.
 
 ### Installation
 
