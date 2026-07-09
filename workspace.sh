@@ -5,6 +5,7 @@ set -eu
 die() { if [ "$#" -gt 0 ]; then printf "%s\n" "$*" >&2; fi && exit 1; }
 fnmatch() { case "$2" in $1) return 0 ;; *) return 1 ;; esac }
 in_dir() (cd "$1" && shift && "$@")
+sponge() { set -- "$1" "$(mktemp)" && cat >"$2" && cp "$2" "$1" && rm "$2"; }
 quote() {
     while [ "$#" -gt 0 ]; do
         printf "'" && printf %s "$1" | sed "s/'/'\\\\''/g" && printf "' " \
@@ -198,7 +199,10 @@ get_script() {
             }
         }
         1 {
-            if ( \
+            if (ENVIRON["REMOVE_WORKSPACE"]) {
+                if (ENVIRON["REMOVE_WORKSPACE"] != name)
+                    print $0
+            } else if ( \
                 (ENVIRON["WORKSPACE"] == name || "" == name) \
                 && (ENVIRON["ACTION"] == action || "" == action) \
                 && (match(ENVIRON["SHELL"], shell "$") || "" == shell) \
@@ -216,6 +220,7 @@ workspace_help() {
         "" \
         "Commands:" \
         "  add <git-url> [name]       Add new workspace (like \`git clone\`)" \
+        "  del <selector>             Delete workspace" \
         "  sync [selector]            Initialize given or all workspaces" \
         "  in <selector> [exe...]     Run executable with args in workspaces" \
         "  info [selector]            Info for workspaces: \"name path\\n\"" \
@@ -236,7 +241,7 @@ workspace() {
     export XDG_CONFIG_HOME XDG_DATA_HOME WORKSPACE_CONFIG WORKSPACE_REPO_HOME
     mkdir -p "$WORKSPACE_REPO_HOME"
     case "${1-}" in
-    sync | "in" | info)
+    del | sync | "in" | info)
         [ "$#" -lt 2 ] || case "$2" in
         --all | --name=*) ;;
         --name)
@@ -269,6 +274,18 @@ workspace() {
             "$([ -e "$WORKSPACE_CONFIG" ] && printf '\n##' || printf '##')" \
             "$1" "$(escape "$2")" \
             >>"$WORKSPACE_CONFIG"
+        ;;
+    del)
+        shift
+        [ "$#" -eq 1 ] || die "Usage: workspace del <selector>"
+        workspace_info "$1" | {
+            shift
+            while read -r WORKSPACE WORKSPACE_PATH; do
+                rm -rf "$WORKSPACE_PATH"
+                REMOVE_WORKSPACE="$WORKSPACE" get_script \
+                    | sponge "$WORKSPACE_CONFIG"
+            done
+        }
         ;;
     sync)
         shift

@@ -153,8 +153,10 @@ function Get-WorkspaceScript {
       }
       "^### ?([^#].*|)$" { $CurrentAction = $Matches.1 }
       "^#### ?([^#].*|)$" { $CurrentShell = $Matches.1 }
-      default {
-        if (
+      ".*" {
+        if ($RemoveWorkspace) {
+          if ($RemoveWorkspace -ne $CurrentWorkspace) { $_ }
+        } elseif (
           (($Workspace -eq $CurrentWorkspace) -or ($CurrentWorkspace -eq "")) `
             -and (($Action -eq $CurrentAction) -or ($CurrentAction -eq "")) `
             -and (($Shell -eq $CurrentShell) -or ($CurrentShell -eq ""))
@@ -275,6 +277,22 @@ $script:WorkspaceCommands = @{
     }
     Add-Workspace @Argv
   }
+  del = {
+    param([string[]]$Argv)
+    if ($null -eq ($Argv = Convert-WorkspaceSelectorArgs $Argv)) { return }
+    if ($Argv.Count -ne 1) {
+      Write-Error "Usage: workspace del <selector>"
+      return
+    }
+    Select-Workspaces $Argv[0] `
+    | ForEach-Object {
+      if (Test-Path -LiteralPath $_.Value) {
+        Remove-Item -Recurse -Force -LiteralPath $_.Value
+      }
+      Set-Content -LiteralPath (Get-WorkspaceConfigPath) `
+        -Value (Get-WorkspaceScript -RemoveWorkspace $_.Name)
+    }
+  }
   sync = {
     param([string[]]$Argv)
     if ($null -eq ($Argv = Convert-WorkspaceSelectorArgs $Argv)) { return }
@@ -329,6 +347,7 @@ $script:WorkspaceCommands = @{
         ''
         'Commands:'
         '  add <git-url> [name]       Add new workspace (like `git clone`)'
+        '  del <selector>             Delete workspace'
         '  sync [selector]            Initialize given or all workspaces'
         '  in <selector> [exe...]     Run executable with args in workspaces'
         '  info [selector]            Info for workspaces: "name path\n"'
