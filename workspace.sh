@@ -5,6 +5,13 @@ set -eu
 die() { if [ "$#" -gt 0 ]; then printf "%s\n" "$*" >&2; fi && exit 1; }
 fnmatch() { case "$2" in $1) return 0 ;; *) return 1 ;; esac }
 in_dir() (cd "$1" && shift && "$@")
+quote() {
+    while [ "$#" -gt 0 ]; do
+        printf "'" && printf %s "$1" | sed "s/'/'\\\\''/g" && printf "' " \
+            || return 1
+        shift
+    done
+}
 
 print_sh_setup() {
     printf %s \
@@ -112,7 +119,7 @@ escape() {
 
 workspace_info() {
     [ -e "$WORKSPACE_CONFIG" ] || die "ERROR: No config, add a workspace first"
-    WORKSPACE="${1-}" awk '
+    awk -vselector="$1" '
         /^##[^#].*$/ {
             sub(/^## ?/, "");
             name = $0
@@ -128,10 +135,12 @@ workspace_info() {
                         substr(path, RSTART + RLENGTH)
                 }
             }
-            if (ENVIRON["WORKSPACE"] && ENVIRON["WORKSPACE"] != name) next;
             if (substr(path, 1, 1) != "/")
                 path = ENVIRON["WORKSPACE_REPO_HOME"] "/" path
-            printf("%s %s\n", name, path);
+            if (match(selector, /^--name=/) && name == substr(selector, 8))
+                printf("%s %s\n", name, path);
+            else if (selector == "--all")
+                printf("%s %s\n", name, path);
         }
     ' "$WORKSPACE_CONFIG"
 }
@@ -207,16 +216,15 @@ workspace_help() {
         "" \
         "Commands:" \
         "  add <git-url> [name]       Add new workspace (like \`git clone\`)" \
-        "  sync [name]                Initialize given or all workspaces" \
-        "  in <name> [cmd...]         Run cmd in name. Use '' as name for" \
-        "                             all workspaces. cmd is run as-is" \
-        "  info [name]                Info for given or all workspaces" \
-        "                             Format is 'name path\n'" \
+        "  sync [selector]            Initialize given or all workspaces" \
+        "  in <selector> [exe...]     Run executable with args in workspaces" \
+        "  info [selector]            Info for workspaces: \"name path\\n\"" \
         "  script-of <name> <action>  Get script for workspace and action" \
         "  print-bash-setup [alias]   Print bash setup" \
         "  print-fish-setup [alias]   Print fish setup" \
         "  print-zsh-setup [alias]    Print zsh setup" \
         "" \
+        "Selectors are a name of a workspace or '--all' for all workspaces" \
         "The default alias if none is given is 'workon'."
 }
 
@@ -227,6 +235,20 @@ workspace() {
     WORKSPACE_REPO_HOME="${WORKSPACE_REPO_HOME:-$XDG_DATA_HOME/workspace}"
     export XDG_CONFIG_HOME XDG_DATA_HOME WORKSPACE_CONFIG WORKSPACE_REPO_HOME
     mkdir -p "$WORKSPACE_REPO_HOME"
+    case "${1-}" in
+    sync | "in" | info)
+        [ "$#" -lt 2 ] || case "$2" in
+        --all | --name=*) ;;
+        --name)
+            [ $# -ge 3 ] || die "Usage: --name <name>"
+            eval "shift 3; set -- $1 --name=$(quote "$3") \"\$@\""
+            ;;
+        --*) die "Invalid workspace selection option: $2" ;;
+        "") eval "shift 2; set -- $1 --all \"\$@\"" ;;
+        *) eval "shift 2; set -- $1 --name=$(quote "$2") \"\$@\"" ;;
+        esac
+        ;;
+    esac
     case "${1:-}" in
     add)
         shift
@@ -250,21 +272,25 @@ workspace() {
         ;;
     sync)
         shift
-        workspace_info "$@" | while read -r WORKSPACE WORKSPACE_PATH; do
-            workspace_sync_one "$WORKSPACE" "$WORKSPACE_PATH"
-        done
+        workspace_info "${1:---all}" | {
+            shift
+            while read -r WORKSPACE WORKSPACE_PATH; do
+                workspace_sync_one "$WORKSPACE" "$WORKSPACE_PATH"
+            done
+        }
         ;;
     "in")
         shift
-        [ "$#" -gt 1 ] || die "Usage: workspace in <name> <cmd...>"
-        WORKSPACE="$1" && shift
+        [ "$#" -ge 2 ] || die "Usage: workspace in <selector> <exe...>"
         exec 3<&0
-        workspace_info "$WORKSPACE" \
-            | while read -r WORKSPACE WORKSPACE_PATH; do
+        workspace_info "$1" | {
+            shift
+            while read -r WORKSPACE WORKSPACE_PATH; do
                 workspace_sync_one "$WORKSPACE" "$WORKSPACE_PATH"
                 export WORKSPACE WORKSPACE_PATH
                 <&3 in_dir "$WORKSPACE_PATH" "$@"
             done
+        }
         exec 3<&-
         ;;
     print-bash-setup)
@@ -281,6 +307,7 @@ workspace() {
         ;;
     info)
         shift
+        [ "$#" -ge 1 ] || set -- --all
         workspace_info "$@"
         ;;
     script-of)
