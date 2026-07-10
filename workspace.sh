@@ -14,7 +14,8 @@ print_sh_setup() {
                     | "$( (command -v fzf || command -v fzy) 2>/dev/null)"
             )"
             [ -n "$1" ] || return 1
-            set -- "$1" "" "$(workspace dir-of "$1")"
+            set -- "$1" "" "$(workspace info "$1")"
+            set -- "$1" "" "${3#* }"
             [ -n "$3" ] \
                 || { echo "ERROR: Unknown workspace: $1" >&2 && return 1; }
             [ -d "$3" ] || workspace sync "$1" || return $?
@@ -63,7 +64,7 @@ print_fish_setup() {
                 set name (workspace info | cut -d\  -f1 | $picker)
             end
             test -n "$name"; or return 1
-            set -l dir (workspace dir-of "$name")
+            set -l dir (workspace info "$name" | string replace -r "[^ ]* " "")
             if test -z "$dir"
                 echo "ERROR: Unknown workspace: $name" >&2
                 return 1
@@ -211,7 +212,6 @@ workspace_help() {
         "                             all workspaces. cmd is run as-is" \
         "  info [name]                Info for given or all workspaces" \
         "                             Format is 'name path\n'" \
-        "  dir-of <name>              Get path to workspace" \
         "  script-of <name> <action>  Get script for workspace and action" \
         "  print-bash-setup [alias]   Print bash setup" \
         "  print-fish-setup [alias]   Print fish setup" \
@@ -282,14 +282,6 @@ workspace() {
     info)
         shift
         workspace_info "$@"
-        ;;
-    dir-of)
-        shift
-        [ "$#" -eq 1 ] || die "Usage: workspace dir-of [name]"
-        workspace_info "$1" | {
-            read -r WORKSPACE WORKSPACE_PATH
-            printf %s\\n "$WORKSPACE_PATH"
-        }
         ;;
     script-of)
         shift
