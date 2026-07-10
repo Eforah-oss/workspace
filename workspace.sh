@@ -120,7 +120,13 @@ escape() {
 
 workspace_info() {
     [ -e "$WORKSPACE_CONFIG" ] || die "ERROR: No config, add a workspace first"
+    # shellcheck disable=SC1003
     awk -vselector="$1" '
+        function existing(path) {
+            mutable_path = path
+            gsub(/'\''/, "'\''\\'\'''\''", mutable_path)
+            return system("test -d '\''" mutable_path "'\''") == 0
+        }
         /^##[^#].*$/ {
             sub(/^## ?/, "");
             name = $0
@@ -139,6 +145,10 @@ workspace_info() {
             if (substr(path, 1, 1) != "/")
                 path = ENVIRON["WORKSPACE_REPO_HOME"] "/" path
             if (match(selector, /^--name=/) && name == substr(selector, 8))
+                printf("%s %s\n", name, path);
+            else if (selector == "--existing" && existing(path))
+                printf("%s %s\n", name, path);
+            else if (selector == "--missing" && !existing(path))
                 printf("%s %s\n", name, path);
             else if (selector == "--all")
                 printf("%s %s\n", name, path);
@@ -229,7 +239,7 @@ workspace_help() {
         "  print-fish-setup [alias]   Print fish setup" \
         "  print-zsh-setup [alias]    Print zsh setup" \
         "" \
-        "Selectors are a name of a workspace or '--all' for all workspaces" \
+        "Selectors are a workspace name, '--all', '--existing' or '--missing'" \
         "The default alias if none is given is 'workon'."
 }
 
@@ -243,7 +253,7 @@ workspace() {
     case "${1-}" in
     del | sync | "in" | info)
         [ "$#" -lt 2 ] || case "$2" in
-        --all | --name=*) ;;
+        --all | --existing | --missing | --name=*) ;;
         --name)
             [ $# -ge 3 ] || die "Usage: --name <name>"
             eval "shift 3; set -- $1 --name=$(quote "$3") \"\$@\""

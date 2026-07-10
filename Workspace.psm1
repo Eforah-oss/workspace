@@ -72,6 +72,20 @@ function Select-Workspaces {
       $Paths.GetEnumerator()
       break
     }
+    '^--existing$' {
+      $Paths.GetEnumerator() `
+      | Where-Object {
+        Test-Path -LiteralPath $_.Value -PathType Container
+      }
+      break
+    }
+    '^--missing$' {
+      $Paths.GetEnumerator() `
+      | Where-Object {
+        !(Test-Path -LiteralPath $_.Value -PathType Container)
+      }
+      break
+    }
     '^--name=(.*)$' {
       if ($Paths.Contains($Matches[1])) {
         , [PSCustomObject]@{ Name = $Matches[1]; Value = $Paths[$Matches[1]] }
@@ -88,7 +102,7 @@ function Convert-WorkspaceSelectorArgs {
   }
   if ($Argv.Count -gt 0) {
     switch -Regex ($Argv[0]) {
-      '^(--all|--name=.*)$' { break }
+      '^(--all|--existing|--missing|--name=.*)$' { break }
       '^--name$' {
         if ($Argv.Count -lt 2) {
           Write-Error "Usage: --name <name>"
@@ -353,7 +367,7 @@ $script:WorkspaceCommands = @{
         '  info [selector]            Info for workspaces: "name path\n"'
         '  script-of <name> <action>  Get script for workspace and action'
         ''
-        'Selectors are a name of a workspace or ''--all'' for all workspaces'
+        'Selectors are a workspace name, ''--all'', ''--existing'' or ''--missing'''
       ) -join "`n")
   }
 }
