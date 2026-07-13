@@ -127,6 +127,9 @@ workspace_info() {
             gsub(/'\''/, "'\''\\'\'''\''", mutable_path)
             return system("test -d '\''" mutable_path "'\''") == 0
         }
+        function out(name, path) {
+            printf("%s %s\n", name, path)
+        }
         /^##[^#].*$/ {
             sub(/^## ?/, "");
             name = $0
@@ -145,13 +148,13 @@ workspace_info() {
             if (substr(path, 1, 1) != "/")
                 path = ENVIRON["WORKSPACE_REPO_HOME"] "/" path
             if (match(selector, /^--name=/) && name == substr(selector, 8))
-                printf("%s %s\n", name, path);
+                out(name, path);
             else if (selector == "--existing" && existing(path))
-                printf("%s %s\n", name, path);
+                out(name, path);
             else if (selector == "--missing" && !existing(path))
-                printf("%s %s\n", name, path);
+                out(name, path);
             else if (selector == "--all")
-                printf("%s %s\n", name, path);
+                out(name, path);
         }
     ' "$WORKSPACE_CONFIG"
 }
