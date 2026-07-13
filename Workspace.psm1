@@ -67,7 +67,7 @@ function Get-WorkspacePaths {
 function Select-Workspaces {
   param([Parameter(Position = 0, Mandatory = $true)] [string]$Selector)
   $Paths = Get-WorkspacePaths
-  switch -Regex ($Selector) {
+  $Workspaces = @(switch -Regex ($Selector) {
     '^--all$' {
       $Paths.GetEnumerator()
       break
@@ -92,7 +92,11 @@ function Select-Workspaces {
       }
       break
     }
+  })
+  if ($Workspaces.Count -eq 0) {
+    [Console]::Error.WriteLine("WARNING: No workspaces match $Selector")
   }
+  $Workspaces
 }
 
 function Convert-WorkspaceSelectorArgs {

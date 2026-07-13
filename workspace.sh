@@ -128,6 +128,7 @@ workspace_info() {
             return system("test -d '\''" mutable_path "'\''") == 0
         }
         function out(name, path) {
+            found = 1
             printf("%s %s\n", name, path)
         }
         /^##[^#].*$/ {
@@ -155,6 +156,10 @@ workspace_info() {
                 out(name, path);
             else if (selector == "--all")
                 out(name, path);
+        }
+        END {
+            if (!found)
+                print "WARNING: No workspaces match " selector >"/dev/stderr"
         }
     ' "$WORKSPACE_CONFIG"
 }
